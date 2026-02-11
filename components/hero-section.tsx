@@ -5,7 +5,7 @@ import { Github, Linkedin, Mail, ArrowDown } from "lucide-react"
 
 export function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center px-6">
+    <section className="relative min-h-screen flex items-center justify-center px-6 pt-24">
       <div className="max-w-4xl mx-auto text-center">
         <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground mb-6 text-balance">
           Ethan Tapia

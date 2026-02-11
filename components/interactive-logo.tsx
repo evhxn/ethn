@@ -13,9 +13,10 @@ export function InteractiveLogo() {
   const dropsRef = useRef<number[]>([])
   const pupilRef = useRef({ x: 0, y: 0 })
 
-  const SIZE = 160
-  const FONT_SIZE = 120
-  const CELL = 10
+  // Canvas internal resolution
+  const SIZE = 200
+  const FONT_SIZE = 160
+  const CELL = 8
   const COLS = Math.floor(SIZE / CELL)
   const ROWS = Math.floor(SIZE / CELL)
 
@@ -26,11 +27,11 @@ export function InteractiveLogo() {
     offscreen.height = SIZE
     const octx = offscreen.getContext("2d")
     if (!octx) return
-    octx.font = `bold ${FONT_SIZE}px var(--font-sans), system-ui, sans-serif`
+    octx.font = `bold ${FONT_SIZE}px "Space Grotesk", system-ui, sans-serif`
     octx.textAlign = "center"
     octx.textBaseline = "middle"
     octx.fillStyle = "#fff"
-    octx.fillText("e", SIZE / 2, SIZE / 2 + 4)
+    octx.fillText("e", SIZE / 2, SIZE / 2 + 6)
     const imageData = octx.getImageData(0, 0, SIZE, SIZE)
     const mask: boolean[] = []
     for (let row = 0; row < ROWS; row++) {
@@ -43,7 +44,6 @@ export function InteractiveLogo() {
     }
     eMaskRef.current = mask
 
-    // Init drops for each column (row position of the leading drop)
     const drops: number[] = []
     for (let col = 0; col < COLS; col++) {
       drops.push(Math.floor(Math.random() * ROWS * -1))
@@ -53,7 +53,6 @@ export function InteractiveLogo() {
 
   const handleGlobalClick = useCallback(() => {
     setIsMatrix(true)
-    // Reset drops for fresh animation
     const drops: number[] = []
     for (let col = 0; col < COLS; col++) {
       drops.push(Math.floor(Math.random() * ROWS * -1))
@@ -91,24 +90,27 @@ export function InteractiveLogo() {
       if (!ctx || !canvas) return
       ctx.clearRect(0, 0, SIZE, SIZE)
 
-      // Calculate pupil offset -- the "e" looks toward the cursor
+      // Calculate pupil offset -- the "e" looks toward the cursor like an eyeball
       const rect = container.getBoundingClientRect()
       const cx = rect.left + rect.width / 2
       const cy = rect.top + rect.height / 2
       const dx = mouseRef.current.x - cx
       const dy = mouseRef.current.y - cy
       const dist = Math.sqrt(dx * dx + dy * dy) || 1
-      const maxOffset = 8
+      const maxOffset = 10
 
-      const targetX = (dx / dist) * Math.min(maxOffset, dist * 0.02)
-      const targetY = (dy / dist) * Math.min(maxOffset, dist * 0.02)
-      pupilRef.current.x += (targetX - pupilRef.current.x) * 0.08
-      pupilRef.current.y += (targetY - pupilRef.current.y) * 0.08
+      const targetX = (dx / dist) * Math.min(maxOffset, dist * 0.03)
+      const targetY = (dy / dist) * Math.min(maxOffset, dist * 0.03)
+      pupilRef.current.x += (targetX - pupilRef.current.x) * 0.1
+      pupilRef.current.y += (targetY - pupilRef.current.y) * 0.1
+
+      const offX = pupilRef.current.x
+      const offY = pupilRef.current.y
 
       if (isMatrix && eMaskRef.current.length > 0) {
         // Binary rain within the "e" shape
         const drops = dropsRef.current
-        const trail = 8
+        const trail = 10
 
         for (let col = 0; col < COLS; col++) {
           for (let row = 0; row < ROWS; row++) {
@@ -119,14 +121,11 @@ export function InteractiveLogo() {
             const distFromHead = headRow - row
 
             if (distFromHead >= 0 && distFromHead < trail) {
-              // Active trail
               const brightness = 1 - distFromHead / trail
               if (distFromHead === 0) {
-                // Leading character -- bright white
                 ctx.fillStyle = `rgba(255, 255, 255, ${0.9 + brightness * 0.1})`
                 ctx.font = `bold ${CELL}px monospace`
               } else {
-                // Trail -- cyan fading
                 ctx.fillStyle = `rgba(14, 229, 208, ${brightness * 0.85})`
                 ctx.font = `${CELL}px monospace`
               }
@@ -135,43 +134,38 @@ export function InteractiveLogo() {
               const char = Math.random() > 0.5 ? "1" : "0"
               ctx.fillText(
                 char,
-                col * CELL + CELL / 2 + pupilRef.current.x,
-                row * CELL + CELL / 2 + pupilRef.current.y
+                col * CELL + CELL / 2 + offX,
+                row * CELL + CELL / 2 + offY
               )
-            } else {
-              // Background static characters inside e shape
-              ctx.font = `${CELL}px monospace`
-              ctx.textAlign = "center"
-              ctx.textBaseline = "middle"
-              ctx.fillStyle = "rgba(14, 229, 208, 0.08)"
-              const char = Math.random() > 0.97 ? (Math.random() > 0.5 ? "1" : "0") : " "
-              if (char !== " ") {
+            } else if (headRow > row) {
+              // Already passed -- dim static character
+              if (Math.random() > 0.6) {
+                ctx.font = `${CELL}px monospace`
+                ctx.textAlign = "center"
+                ctx.textBaseline = "middle"
+                ctx.fillStyle = "rgba(14, 229, 208, 0.15)"
+                const char = Math.random() > 0.5 ? "1" : "0"
                 ctx.fillText(
                   char,
-                  col * CELL + CELL / 2 + pupilRef.current.x,
-                  row * CELL + CELL / 2 + pupilRef.current.y
+                  col * CELL + CELL / 2 + offX,
+                  row * CELL + CELL / 2 + offY
                 )
               }
             }
           }
 
-          // Advance drop
-          drops[col] += 0.4 + Math.random() * 0.15
+          drops[col] += 0.5 + Math.random() * 0.2
           if (drops[col] - trail > ROWS) {
             drops[col] = Math.floor(Math.random() * -6)
           }
         }
       } else {
-        // Draw the "e" with pupil offset (eyeball effect)
-        ctx.font = `bold ${FONT_SIZE}px var(--font-sans), system-ui, sans-serif`
+        // Normal state: draw "e" shifted by pupil offset
+        ctx.font = `bold ${FONT_SIZE}px "Space Grotesk", system-ui, sans-serif`
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
         ctx.fillStyle = "hsl(190, 95%, 50%)"
-        ctx.fillText(
-          "e",
-          SIZE / 2 + pupilRef.current.x,
-          SIZE / 2 + 4 + pupilRef.current.y
-        )
+        ctx.fillText("e", SIZE / 2 + offX, SIZE / 2 + 6 + offY)
       }
 
       animationRef.current = requestAnimationFrame(animate)
@@ -189,7 +183,7 @@ export function InteractiveLogo() {
     >
       <canvas
         ref={canvasRef}
-        className="w-[120px] h-[120px] rounded-xl"
+        className="w-16 h-16 sm:w-20 sm:h-20"
         aria-hidden="true"
       />
     </div>
