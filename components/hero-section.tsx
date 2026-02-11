@@ -7,13 +7,7 @@ export function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center px-6">
       <div className="max-w-4xl mx-auto text-center">
-        <div className="mb-6">
-          <span className="inline-block text-sm font-mono text-primary tracking-widest uppercase mb-4 opacity-80">
-            Computer Science Student
-          </span>
-        </div>
-
-        <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tight text-foreground mb-6 text-balance">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground mb-6 text-balance">
           Ethan Tapia
         </h1>
 
