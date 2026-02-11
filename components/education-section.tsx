@@ -1,3 +1,5 @@
+"use client"
+
 import { AnimatedSection } from "./animated-section"
 
 export function EducationSection() {
