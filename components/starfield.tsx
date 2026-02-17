@@ -78,14 +78,14 @@ export function Starfield() {
 
         ctx.beginPath()
         ctx.arc(sx, sy, size, 0, Math.PI * 2)
-        ctx.fillStyle = `rgba(180, 220, 255, ${finalOpacity})`
+        ctx.fillStyle = `rgba(220, 220, 225, ${finalOpacity})`
         ctx.fill()
 
         // Subtle glow for brighter stars
         if (star.size > 1.2) {
           ctx.beginPath()
           ctx.arc(sx, sy, size * 2.5, 0, Math.PI * 2)
-          ctx.fillStyle = `rgba(140, 200, 255, ${finalOpacity * 0.15})`
+          ctx.fillStyle = `rgba(200, 200, 210, ${finalOpacity * 0.15})`
           ctx.fill()
         }
 

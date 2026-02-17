@@ -91,7 +91,7 @@ export function RetroStarfield() {
         ctx.font = `${star.size}px "Courier New", monospace`
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
-        ctx.fillStyle = `rgba(120, 160, 200, ${finalOpacity})`
+        ctx.fillStyle = `rgba(180, 180, 190, ${finalOpacity})`
         ctx.fillText(star.char, star.x, star.y)
       }
 

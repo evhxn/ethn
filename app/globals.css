@@ -10,33 +10,33 @@
     --card-foreground: 210 20% 92%;
     --popover: 220 18% 7%;
     --popover-foreground: 210 20% 92%;
-    --primary: 190 95% 50%;
+    --primary: 0 0% 92%;
     --primary-foreground: 220 20% 4%;
     --secondary: 220 15% 12%;
     --secondary-foreground: 210 20% 80%;
     --muted: 220 15% 12%;
     --muted-foreground: 215 15% 55%;
-    --accent: 190 95% 50%;
+    --accent: 0 0% 92%;
     --accent-foreground: 220 20% 4%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 215 20% 14%;
     --input: 215 20% 14%;
-    --ring: 190 95% 50%;
+    --ring: 0 0% 92%;
     --radius: 0.5rem;
-    --chart-1: 190 95% 50%;
+    --chart-1: 0 0% 92%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
     --sidebar-background: 220 18% 5%;
     --sidebar-foreground: 210 20% 92%;
-    --sidebar-primary: 190 95% 50%;
+    --sidebar-primary: 0 0% 92%;
     --sidebar-primary-foreground: 220 20% 4%;
     --sidebar-accent: 220 15% 12%;
     --sidebar-accent-foreground: 210 20% 92%;
     --sidebar-border: 215 20% 14%;
-    --sidebar-ring: 190 95% 50%;
+    --sidebar-ring: 0 0% 92%;
   }
 }
 
@@ -82,7 +82,7 @@ html {
    Archive / Retro CRT Tokens
    ============================== */
 :root {
-  --archive-desktop: #4a6a8a;
+  --archive-desktop: #1a1a1e;
   --archive-menubar: #c8c8c8;
   --archive-bg: #d4d0c8;
   --archive-card: #e8e4dc;

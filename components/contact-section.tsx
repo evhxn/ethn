@@ -37,7 +37,7 @@ export function ContactSection() {
             </Link>
 
             <Link
-              href="https://linkedin.com"
+              href="https://www.linkedin.com/in/ethn/"
               target="_blank"
               rel="noopener noreferrer"
               className="group flex flex-col items-center gap-3"
@@ -70,7 +70,7 @@ export function ContactSection() {
 
         <AnimatedSection delay={200}>
           <p className="text-sm text-muted-foreground mt-12">
-            etapia@chapman.edu &middot; 657-256-2947
+            etapia@chapman.edu
           </p>
         </AnimatedSection>
       </div>

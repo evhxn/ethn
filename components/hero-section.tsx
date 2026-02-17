@@ -28,7 +28,7 @@ export function HeroSection() {
             <Github className="w-5 h-5" />
           </Link>
           <Link
-            href="https://linkedin.com"
+            href="https://www.linkedin.com/in/ethn/"
             target="_blank"
             rel="noopener noreferrer"
             className="text-muted-foreground hover:text-primary transition-colors duration-200"
@@ -48,8 +48,6 @@ export function HeroSection() {
         </div>
 
         <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-16">
-          <span>657-256-2947</span>
-          <span className="w-1 h-1 rounded-full bg-muted-foreground" />
           <span>etapia@chapman.edu</span>
           <span className="w-1 h-1 rounded-full bg-muted-foreground" />
           <span>Anaheim, CA</span>

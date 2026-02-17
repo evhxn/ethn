@@ -60,7 +60,7 @@ const PROJECT_FOLDERS: FolderItem[] = [
   {
     name: "LinkedIn",
     type: "link",
-    href: "https://www.linkedin.com/in/ethan-tapia/",
+    href: "https://www.linkedin.com/in/ethn/",
   },
   { name: "Photos", type: "coming-soon" },
   { name: "Assets", type: "coming-soon" },
@@ -233,7 +233,7 @@ function HelperCharacter() {
 
   const quickItems = [
     { label: "What does Ethan do?", response: "Ethan is a Systems & Software Engineer specializing in embedded systems, robotics, and entertainment technology. He builds at the intersection of hardware and software." },
-    { label: "How can I reach Ethan?", response: "You can reach Ethan at etapia@chapman.edu or call 657-256-2947. He's based in Anaheim, CA." },
+    { label: "How can I reach Ethan?", response: "You can reach Ethan at etapia@chapman.edu or connect on LinkedIn at linkedin.com/in/ethn. He's based in Anaheim, CA." },
     { label: "What's this archive?", response: "This is Ethan's retro project archive -- a hidden Easter egg! Double-click any folder to explore project details and assets." },
     { label: "Where did Ethan study?", response: "Ethan studies Computer Science at Chapman University, with a minor in Entrepreneurship. Dean's List and Provost Scholarship recipient!" },
   ]
@@ -281,26 +281,15 @@ function HelperCharacter() {
         <div className="absolute -bottom-1.5 right-[33px] w-0 h-0 border-l-[7px] border-l-transparent border-r-[7px] border-r-transparent border-t-[7px] border-t-[#fffde8]" />
       </div>
 
-      {/* Character: pixel-art paperclip-style buddy */}
-      <div className="w-16 h-20 relative">
-        <svg viewBox="0 0 64 80" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          {/* Sticky note body */}
-          <rect x="8" y="20" width="48" height="56" rx="2" fill="#d4c89a" stroke="#222" strokeWidth="1.5" transform="rotate(-5 32 48)" />
-          <rect x="10" y="22" width="44" height="52" rx="1" fill="#e8e0b8" transform="rotate(-5 32 48)" />
-          {/* Curl at bottom-right */}
-          <path d="M52 72 Q56 68 52 64" fill="#c8c09a" stroke="#222" strokeWidth="1" transform="rotate(-5 32 48)" />
-          {/* Eyes */}
-          <circle cx="26" cy="38" r="5" fill="white" stroke="#222" strokeWidth="1.5" />
-          <circle cx="42" cy="38" r="5" fill="white" stroke="#222" strokeWidth="1.5" />
-          <circle cx="27.5" cy="39" r="2.5" fill="#222" />
-          <circle cx="43.5" cy="39" r="2.5" fill="#222" />
-          <circle cx="28.5" cy="38" r="0.8" fill="white" />
-          <circle cx="44.5" cy="38" r="0.8" fill="white" />
-          {/* Smile */}
-          <path d="M28 48 Q34 54 40 48" fill="none" stroke="#222" strokeWidth="1.5" strokeLinecap="round" />
-          {/* Wire/paperclip arm */}
-          <path d="M10 30 Q2 20 8 10 Q14 0 20 10 Q24 16 18 24" fill="none" stroke="#888" strokeWidth="3" strokeLinecap="round" />
-        </svg>
+      {/* Clippy character */}
+      <div className="w-20 h-20 relative">
+        <Image
+          src="/images/clippy.png"
+          alt="Clip-E assistant"
+          width={80}
+          height={80}
+          className="object-contain drop-shadow-lg"
+        />
       </div>
     </div>
   )
