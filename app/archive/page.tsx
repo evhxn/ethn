@@ -282,12 +282,12 @@ function HelperCharacter() {
       </div>
 
       {/* Clippy character */}
-      <div className="w-20 h-20 relative">
+      <div className="w-[88px] h-[88px] relative">
         <Image
           src="/images/clippy.png"
           alt="Clip-E assistant"
-          width={80}
-          height={80}
+          width={96}
+          height={96}
           className="object-contain drop-shadow-lg"
         />
       </div>
