@@ -3,16 +3,21 @@
 import { useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 
-export function InteractiveLogo() {
+interface InteractiveLogoProps {
+  variant?: "white" | "black"
+}
+
+export function InteractiveLogo({ variant = "white" }: InteractiveLogoProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const mouseRef = useRef({ x: 0, y: 0 })
   const animationRef = useRef<number>(0)
   const pupilRef = useRef({ x: 0, y: 0 })
+  const imgRef = useRef<HTMLImageElement | null>(null)
+  const imgLoadedRef = useRef(false)
   const router = useRouter()
 
   const SIZE = 200
-  const FONT_SIZE = 160
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
@@ -22,6 +27,16 @@ export function InteractiveLogo() {
     },
     [router]
   )
+
+  useEffect(() => {
+    const img = new Image()
+    img.crossOrigin = "anonymous"
+    img.src = "/images/e-logo.png"
+    img.onload = () => {
+      imgRef.current = img
+      imgLoadedRef.current = true
+    }
+  }, [])
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -46,34 +61,46 @@ export function InteractiveLogo() {
       if (!ctx || !canvas) return
       ctx.clearRect(0, 0, SIZE, SIZE)
 
+      // Calculate eyeball offset toward cursor
       const rect = container.getBoundingClientRect()
       const cx = rect.left + rect.width / 2
       const cy = rect.top + rect.height / 2
       const dx = mouseRef.current.x - cx
       const dy = mouseRef.current.y - cy
       const dist = Math.sqrt(dx * dx + dy * dy) || 1
-      const maxOffset = 10
+      const maxOffset = 8
 
-      const targetX = (dx / dist) * Math.min(maxOffset, dist * 0.03)
-      const targetY = (dy / dist) * Math.min(maxOffset, dist * 0.03)
-      pupilRef.current.x += (targetX - pupilRef.current.x) * 0.1
-      pupilRef.current.y += (targetY - pupilRef.current.y) * 0.1
+      const targetX = (dx / dist) * Math.min(maxOffset, dist * 0.025)
+      const targetY = (dy / dist) * Math.min(maxOffset, dist * 0.025)
+      pupilRef.current.x += (targetX - pupilRef.current.x) * 0.08
+      pupilRef.current.y += (targetY - pupilRef.current.y) * 0.08
 
       const offX = pupilRef.current.x
       const offY = pupilRef.current.y
 
-      ctx.font = `bold ${FONT_SIZE}px "Space Grotesk", system-ui, sans-serif`
-      ctx.textAlign = "center"
-      ctx.textBaseline = "middle"
-      ctx.fillStyle = "hsl(190, 95%, 50%)"
-      ctx.fillText("e", SIZE / 2 + offX, SIZE / 2 + 6 + offY)
+      if (imgLoadedRef.current && imgRef.current) {
+        // Draw the PNG centered with eyeball offset
+        const imgSize = SIZE * 0.85
+        const x = (SIZE - imgSize) / 2 + offX
+        const y = (SIZE - imgSize) / 2 + offY
+
+        ctx.save()
+
+        // For white variant, invert the black PNG to white
+        if (variant === "white") {
+          ctx.filter = "invert(1)"
+        }
+
+        ctx.drawImage(imgRef.current, x, y, imgSize, imgSize)
+        ctx.restore()
+      }
 
       animationRef.current = requestAnimationFrame(animate)
     }
 
     animate()
     return () => cancelAnimationFrame(animationRef.current)
-  }, [])
+  }, [variant])
 
   return (
     <div
@@ -84,7 +111,7 @@ export function InteractiveLogo() {
     >
       <canvas
         ref={canvasRef}
-        className="w-16 h-16 sm:w-20 sm:h-20"
+        className="w-12 h-12 sm:w-14 sm:h-14"
         aria-hidden="true"
       />
     </div>
