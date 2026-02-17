@@ -55,6 +55,18 @@ const config: Config = {
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
   			},
+  			archive: {
+  				desktop: 'var(--archive-desktop)',
+  				menubar: 'var(--archive-menubar)',
+  				bg: 'var(--archive-bg)',
+  				card: 'var(--archive-card)',
+  				border: 'var(--archive-border)',
+  				text: 'var(--archive-text)',
+  				textMuted: 'var(--archive-text-muted)',
+  				titlebar: 'var(--archive-titlebar)',
+  				highlight: 'var(--archive-highlight)',
+  				highlightText: 'var(--archive-highlight-text)',
+  			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
   				foreground: 'hsl(var(--sidebar-foreground))',

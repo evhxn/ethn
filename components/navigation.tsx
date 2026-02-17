@@ -33,9 +33,9 @@ export function Navigation() {
       }`}
     >
       <div className="mx-auto max-w-6xl flex items-center justify-between px-6 py-4">
-        <Link href="/" className="relative z-50" onClick={(e) => e.stopPropagation()}>
+        <div className="relative z-50">
           <InteractiveLogo />
-        </Link>
+        </div>
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
