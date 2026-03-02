@@ -242,10 +242,16 @@ function HelperCharacter() {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-4 right-4 z-40 w-12 h-12 bg-archive-card border-2 border-archive-border rounded-sm shadow-lg flex items-center justify-center hover:bg-archive-highlight/30 transition-colors"
+        className="fixed bottom-4 right-4 z-40 w-[72px] h-[72px] flex items-center justify-center hover:scale-105 transition-transform"
         aria-label="Open helper"
       >
-        <span className="text-lg font-mono font-bold text-archive-text">?</span>
+        <Image
+          src="/images/clippy.png"
+          alt="Clip-E assistant"
+          width={72}
+          height={72}
+          className="object-contain drop-shadow-lg"
+        />
       </button>
     )
   }
