@@ -68,6 +68,45 @@ const PROJECT_FOLDERS: FolderItem[] = [
 ]
 
 // --------------------------------------------------
+// Random CRT Flicker Component
+// --------------------------------------------------
+
+function RandomCRTFlicker() {
+  const flickerRef = useRef<HTMLDivElement>(null)
+  
+  useEffect(() => {
+    const el = flickerRef.current
+    if (!el) return
+    
+    let animationId: number
+    
+    const flicker = () => {
+      // Constant flickering with random intensity each frame
+      const intensity = 0.005 + Math.random() * 0.025
+      // Random warm color variation
+      const r = 255
+      const g = 245 + Math.floor(Math.random() * 10)
+      const b = 215 + Math.floor(Math.random() * 30)
+      
+      el.style.background = `rgba(${r}, ${g}, ${b}, ${intensity})`
+      
+      animationId = requestAnimationFrame(flicker)
+    }
+    
+    animationId = requestAnimationFrame(flicker)
+    
+    return () => cancelAnimationFrame(animationId)
+  }, [])
+  
+  return (
+    <div 
+      ref={flickerRef} 
+      className="crt-flicker pointer-events-none fixed inset-0 z-[60]" 
+    />
+  )
+}
+
+// --------------------------------------------------
 // SVG Icons
 // --------------------------------------------------
 
@@ -522,7 +561,7 @@ export default function ArchivePage() {
 
       {/* CRT Overlays */}
       <div className="crt-static pointer-events-none fixed inset-0 z-[60]" />
-      <div className="crt-flicker pointer-events-none fixed inset-0 z-[60]" />
+      <RandomCRTFlicker />
 
       {/* Menu Bar */}
       <header className="relative z-40 flex items-center gap-0.5 px-3 py-1 bg-archive-menubar border-b-2 border-archive-border">

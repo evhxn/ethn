@@ -114,27 +114,11 @@ html {
   98% { opacity: 0; }
 }
 
-/* CRT subtle brightness flicker - abrupt screen flicker */
+/* CRT flicker overlay - controlled by JavaScript for random timing */
 .crt-flicker {
   background: transparent;
-  animation: crt-brightness-flicker 5s steps(1) infinite;
   pointer-events: none;
-}
-
-@keyframes crt-brightness-flicker {
-  0%, 100% { background: transparent; }
-  15% { background: rgba(255, 250, 235, 0.02); }
-  15.5% { background: transparent; }
-  32% { background: rgba(255, 248, 225, 0.015); }
-  32.3% { background: transparent; }
-  48% { background: rgba(255, 252, 240, 0.025); }
-  48.4% { background: transparent; }
-  65% { background: rgba(255, 245, 220, 0.012); }
-  65.2% { background: transparent; }
-  78% { background: rgba(255, 250, 230, 0.018); }
-  78.5% { background: transparent; }
-  91% { background: rgba(255, 248, 228, 0.02); }
-  91.3% { background: transparent; }
+  transition: none;
 }
 
 /* CRT Window styling */
