@@ -114,19 +114,28 @@ html {
   98% { opacity: 0; }
 }
 
-/* CRT subtle brightness flicker */
+/* CRT subtle brightness flicker - smooth phosphor glow variation */
 .crt-flicker {
   background: transparent;
-  animation: crt-brightness-flicker 4s infinite;
+  animation: crt-brightness-flicker 6s ease-in-out infinite;
   pointer-events: none;
 }
 
 @keyframes crt-brightness-flicker {
-  0%, 100% { background: transparent; }
-  50% { background: rgba(255, 255, 255, 0.008); }
-  52% { background: transparent; }
-  70% { background: rgba(100, 140, 180, 0.012); }
-  72% { background: transparent; }
+  0% { background: rgba(255, 248, 230, 0.01); }
+  8% { background: rgba(255, 250, 235, 0.015); }
+  15% { background: rgba(255, 245, 220, 0.008); }
+  23% { background: rgba(255, 252, 240, 0.018); }
+  30% { background: rgba(255, 248, 225, 0.012); }
+  38% { background: rgba(255, 250, 230, 0.006); }
+  45% { background: rgba(255, 246, 220, 0.014); }
+  52% { background: rgba(255, 252, 238, 0.02); }
+  60% { background: rgba(255, 248, 228, 0.01); }
+  68% { background: rgba(255, 250, 232, 0.016); }
+  75% { background: rgba(255, 245, 218, 0.008); }
+  83% { background: rgba(255, 251, 236, 0.013); }
+  90% { background: rgba(255, 248, 225, 0.018); }
+  100% { background: rgba(255, 248, 230, 0.01); }
 }
 
 /* CRT Window styling */
