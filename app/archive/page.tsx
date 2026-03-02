@@ -78,36 +78,24 @@ function RandomCRTFlicker() {
     const el = flickerRef.current
     if (!el) return
     
-    let timeoutId: NodeJS.Timeout
+    let animationId: number
     
-    const triggerFlicker = () => {
-      // Random intensity between 0.008 and 0.035
-      const intensity = 0.008 + Math.random() * 0.027
+    const flicker = () => {
+      // Constant flickering with random intensity each frame
+      const intensity = 0.005 + Math.random() * 0.025
       // Random warm color variation
       const r = 255
       const g = 245 + Math.floor(Math.random() * 10)
       const b = 215 + Math.floor(Math.random() * 30)
       
-      // Apply the flicker instantly
       el.style.background = `rgba(${r}, ${g}, ${b}, ${intensity})`
       
-      // Random flicker duration between 30-120ms
-      const flickerDuration = 30 + Math.random() * 90
-      
-      setTimeout(() => {
-        el.style.background = 'transparent'
-      }, flickerDuration)
-      
-      // Random delay until next flicker (800ms to 4000ms)
-      const nextDelay = 800 + Math.random() * 3200
-      timeoutId = setTimeout(triggerFlicker, nextDelay)
+      animationId = requestAnimationFrame(flicker)
     }
     
-    // Start with a random initial delay
-    const initialDelay = Math.random() * 2000
-    timeoutId = setTimeout(triggerFlicker, initialDelay)
+    animationId = requestAnimationFrame(flicker)
     
-    return () => clearTimeout(timeoutId)
+    return () => cancelAnimationFrame(animationId)
   }, [])
   
   return (
