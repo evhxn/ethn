@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface InteractiveLogoProps {
   variant?: "white" | "black"
@@ -16,6 +17,7 @@ export function InteractiveLogo({ variant = "white" }: InteractiveLogoProps) {
   const imgRef = useRef<HTMLImageElement | null>(null)
   const imgLoadedRef = useRef(false)
   const router = useRouter()
+  const reducedMotion = useReducedMotion()
 
   const SIZE = 200
 
@@ -61,19 +63,25 @@ export function InteractiveLogo({ variant = "white" }: InteractiveLogoProps) {
       if (!ctx || !canvas) return
       ctx.clearRect(0, 0, SIZE, SIZE)
 
-      // Calculate eyeball offset toward cursor
-      const rect = container.getBoundingClientRect()
-      const cx = rect.left + rect.width / 2
-      const cy = rect.top + rect.height / 2
-      const dx = mouseRef.current.x - cx
-      const dy = mouseRef.current.y - cy
-      const dist = Math.sqrt(dx * dx + dy * dy) || 1
-      const maxOffset = 8
+      if (reducedMotion) {
+        // Reduced motion: logo stays centered, no cursor tracking
+        pupilRef.current.x = 0
+        pupilRef.current.y = 0
+      } else {
+        // Calculate eyeball offset toward cursor
+        const rect = container.getBoundingClientRect()
+        const cx = rect.left + rect.width / 2
+        const cy = rect.top + rect.height / 2
+        const dx = mouseRef.current.x - cx
+        const dy = mouseRef.current.y - cy
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1
+        const maxOffset = 8
 
-      const targetX = (dx / dist) * Math.min(maxOffset, dist * 0.025)
-      const targetY = (dy / dist) * Math.min(maxOffset, dist * 0.025)
-      pupilRef.current.x += (targetX - pupilRef.current.x) * 0.08
-      pupilRef.current.y += (targetY - pupilRef.current.y) * 0.08
+        const targetX = (dx / dist) * Math.min(maxOffset, dist * 0.025)
+        const targetY = (dy / dist) * Math.min(maxOffset, dist * 0.025)
+        pupilRef.current.x += (targetX - pupilRef.current.x) * 0.08
+        pupilRef.current.y += (targetY - pupilRef.current.y) * 0.08
+      }
 
       const offX = pupilRef.current.x
       const offY = pupilRef.current.y
@@ -95,12 +103,15 @@ export function InteractiveLogo({ variant = "white" }: InteractiveLogoProps) {
         ctx.restore()
       }
 
+      // Reduced motion: stop looping once the static logo has been drawn
+      if (reducedMotion && imgLoadedRef.current) return
+
       animationRef.current = requestAnimationFrame(animate)
     }
 
     animate()
     return () => cancelAnimationFrame(animationRef.current)
-  }, [variant])
+  }, [variant, reducedMotion])
 
   return (
     <div
