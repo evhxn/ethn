@@ -1,6 +1,7 @@
 "use client"
 
 import { useRef, useEffect, useCallback } from "react"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 
 interface SymbolStar {
   x: number
@@ -19,6 +20,7 @@ export function RetroStarfield() {
   const starsRef = useRef<SymbolStar[]>([])
   const animationRef = useRef<number>(0)
   const mouseRef = useRef({ x: -1, y: -1 })
+  const reducedMotion = useReducedMotion()
 
   const initStars = useCallback((width: number, height: number) => {
     const stars: SymbolStar[] = []
@@ -95,16 +97,19 @@ export function RetroStarfield() {
         ctx.fillText(star.char, star.x, star.y)
       }
 
-      animationRef.current = requestAnimationFrame(animate)
+      if (!reducedMotion) {
+        animationRef.current = requestAnimationFrame(animate)
+      }
     }
 
+    // Reduced motion: render one static frame (no twinkle, no cursor tracking)
     animate()
 
     return () => {
       window.removeEventListener("resize", resize)
       cancelAnimationFrame(animationRef.current)
     }
-  }, [initStars])
+  }, [initStars, reducedMotion])
 
   return (
     <canvas

@@ -126,6 +126,13 @@ html {
   box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
+/* Custom cursor: hide the native cursor inside the archive shell only while
+   the CustomCursor component is mounted (fine pointer + motion allowed). */
+.archive-cursor-active .archive-crt,
+.archive-cursor-active .archive-crt * {
+  cursor: none !important;
+}
+
 /* Archive page overall CRT feel */
 .archive-crt {
   image-rendering: auto;
