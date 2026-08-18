@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { RetroStarfield } from "@/components/retro-starfield"
@@ -21,6 +21,17 @@ export default function ArchivePage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showSpecial, setShowSpecial] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [currentDate, setCurrentDate] = useState("")
+
+  useEffect(() => {
+    setCurrentDate(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      }),
+    )
+  }, [])
 
   const closeMenu = () => setOpenMenu(null)
 
@@ -99,12 +110,8 @@ export default function ArchivePage() {
         />
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs font-mono text-archive-textMuted">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
+                <span className="text-xs font-mono text-archive-textMuted" suppressHydrationWarning>
+                  {currentDate}
           </span>
         </div>
       </header>
