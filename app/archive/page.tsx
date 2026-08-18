@@ -12,7 +12,6 @@ import { ArchiveWindow } from "@/components/archive/archive-window"
 import { HelperCharacter } from "@/components/archive/helper-character"
 import { Special3DOverlay } from "@/components/archive/special-3d-overlay"
 import { AboutWindow } from "@/components/archive/about-window"
-import { CustomCursor } from "@/components/archive/custom-cursor"
 import { CursorPreview } from "@/components/archive/cursor-preview"
 
 export default function ArchivePage() {
@@ -63,8 +62,7 @@ export default function ArchivePage() {
       <div className="crt-static pointer-events-none fixed inset-0 z-[60]" />
       <RandomCRTFlicker />
 
-      {/* Couture-motion layer: custom cursor + cursor-follow preview */}
-      <CustomCursor />
+      {/* Couture-motion layer: cursor-follow preview */}
       <CursorPreview />
 
       {/* Menu Bar */}
@@ -127,7 +125,6 @@ export default function ArchivePage() {
             {PROJECT_FOLDERS.map((item) => (
               <button
                 key={item.name}
-                data-cursor={item.type === "folder" || item.type === "link" ? "view" : undefined}
                 className={`flex flex-col items-center gap-1.5 p-2 rounded-sm transition-colors group ${
                   selectedItem === item.name ? "bg-archive-highlight" : "hover:bg-archive-highlight/30"
                 }`}
