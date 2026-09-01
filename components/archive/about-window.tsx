@@ -17,6 +17,14 @@ export function AboutWindow({ onClose }: { onClose: () => void }) {
               Building at the intersection of hardware and software.
             </p>
           </div>
+          <a
+            href="https://blogs.chapman.edu/engineering/2023/12/02/chapman-engineering-students-present-real-world-solutions-at-the-fall-student-scholar-symposium/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs font-mono text-archive-highlightText underline underline-offset-2 hover:text-archive-text"
+          >
+            Read more about Bent Into Shape
+          </a>
           <div className="w-full border-t border-archive-border pt-3">
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
               <span className="text-archive-textMuted">School:</span>

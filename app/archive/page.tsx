@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { RetroStarfield } from "@/components/retro-starfield"
@@ -10,7 +10,6 @@ import { RandomCRTFlicker } from "@/components/archive/random-crt-flicker"
 import { RetroDropdown } from "@/components/archive/retro-dropdown"
 import { ArchiveWindow } from "@/components/archive/archive-window"
 import { HelperCharacter } from "@/components/archive/helper-character"
-import { Special3DOverlay } from "@/components/archive/special-3d-overlay"
 import { AboutWindow } from "@/components/archive/about-window"
 import { CursorPreview } from "@/components/archive/cursor-preview"
 
@@ -19,8 +18,17 @@ export default function ArchivePage() {
   const [openFolder, setOpenFolder] = useState<FolderItem | null>(null)
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
-  const [showSpecial, setShowSpecial] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
+  const [photoIndex, setPhotoIndex] = useState(0)
+  const [localTime, setLocalTime] = useState("")
+
+  useEffect(() => {
+    const updateTime = () => setLocalTime(new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date()))
+    updateTime()
+    const timer = window.setInterval(updateTime, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const closeMenu = () => setOpenMenu(null)
 
@@ -29,7 +37,7 @@ export default function ArchivePage() {
     { label: "Open", shortcut: "\u2318O", disabled: true },
     { label: "Print", shortcut: "\u2318P", disabled: true },
     { divider: true, label: "" },
-    { label: "Close Window", onClick: () => router.push("/") },
+    { label: "Close Window", onClick: () => window.close() },
     { label: "Find...", shortcut: "\u2318F", disabled: true },
   ]
 
@@ -41,8 +49,6 @@ export default function ArchivePage() {
   ]
 
   const specialItems = [
-    { label: "3D Logo Viewer", onClick: () => setShowSpecial(true) },
-    { divider: true, label: "" },
     { label: "Restart", disabled: true },
     { label: "Shut Down", onClick: () => router.push("/") },
   ]
@@ -99,12 +105,8 @@ export default function ArchivePage() {
         />
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs font-mono text-archive-textMuted">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
+          <span className="text-xs font-mono text-archive-textMuted" suppressHydrationWarning>
+            {localTime || "--:--:--"}
           </span>
         </div>
       </header>
@@ -113,11 +115,12 @@ export default function ArchivePage() {
       <main className="relative z-10 p-4 md:p-8 min-h-[calc(100vh-32px)]">
         <ArchiveWindow
           title={"Ethan's Project Archive"}
-          onClose={() => router.push("/")}
+          onClose={() => window.close()}
           className="max-w-4xl mx-auto"
         >
-          <div className="flex items-center gap-1 mb-4 pb-2 border-b border-archive-border">
+          <div className="flex flex-col gap-1 mb-4 pb-2 border-b border-archive-border">
             <span className="text-xs font-mono text-archive-textMuted">{"Desktop > Archive"}</span>
+            <span className="text-[10px] font-mono text-archive-textMuted">Double-click a project folder to open it; click a photo to view it larger.</span>
           </div>
 
           {/* Folder Grid */}
@@ -187,6 +190,11 @@ export default function ArchivePage() {
                   </span>
                 )}
               </div>
+              {openFolder.href && (
+                <a href={openFolder.href} target="_blank" rel="noreferrer" className="mb-4 inline-block border border-archive-border bg-archive-card px-3 py-2 text-xs font-mono text-archive-text underline underline-offset-2 hover:bg-archive-highlight">
+                  Read the Research symposium article
+                </a>
+              )}
               {openFolder.content && (
                 <div className="mb-6 p-3 border border-archive-border rounded-sm bg-archive-card">
                   <div className="flex items-center gap-2 mb-2">
@@ -204,16 +212,24 @@ export default function ArchivePage() {
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {openFolder.photos.map((photo) => (
-                      <div
+                      <button
                         key={photo.name}
+                        type="button"
                         data-preview={photo.src}
-                        className="flex flex-col items-center gap-1.5 p-2 rounded-sm border border-archive-border bg-archive-card hover:bg-archive-highlight/30 transition-colors"
+                        onClick={() => {
+                          if (photo.src) {
+                            setPhotoIndex(openFolder.photos?.findIndex((item) => item.name === photo.name) ?? 0)
+                            setSelectedPhoto({ ...photo, src: photo.src })
+                          }
+                        }}
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-sm border border-archive-border bg-archive-card hover:bg-archive-highlight/30 transition-colors cursor-pointer"
+                        aria-label={`Open ${photo.name}`}
                       >
                         <PhotoIcon className="w-10 h-10" />
                         <span className="text-[10px] font-mono text-archive-textMuted text-center truncate w-full">
                           {photo.name}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -226,10 +242,42 @@ export default function ArchivePage() {
             </ArchiveWindow>
           </div>
         )}
-      </main>
 
-      {/* Special 3D overlay */}
-      {showSpecial && <Special3DOverlay onClose={() => setShowSpecial(false)} />}
+        {selectedPhoto && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onClick={() => setSelectedPhoto(null)}>
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedPhoto.name} photo viewer`}
+              className="relative w-full max-w-4xl border-2 border-archive-border bg-archive-menubar p-1 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between bg-archive-highlight px-2 py-1 text-xs font-mono text-archive-highlightText">
+                <span>{selectedPhoto.name} — Photo Viewer</span>
+                <button type="button" onClick={() => setSelectedPhoto(null)} className="border border-archive-border px-2 leading-none hover:bg-archive-card" aria-label="Close photo viewer">×</button>
+              </div>
+              <div className="bg-archive-card p-3">
+                <Image src={selectedPhoto.src} alt={selectedPhoto.alt ?? selectedPhoto.name} width={1400} height={1000} className="max-h-[72vh] w-full object-contain" />
+                {openFolder?.photos && openFolder.photos.length > 1 && (
+                  <div className="mt-2 flex items-center justify-between border-t border-archive-border pt-2 font-mono text-xs">
+                    <button type="button" onClick={() => {
+                      const next = photoIndex - 1
+                      setPhotoIndex(next)
+                      setSelectedPhoto({ ...openFolder.photos![next], src: openFolder.photos![next].src! })
+                    }} aria-label="Previous photo" disabled={photoIndex === 0} className="border border-archive-border bg-archive-card px-3 py-1 text-archive-text disabled:cursor-not-allowed disabled:opacity-40">&lt;</button>
+                    <span>{photoIndex + 1} / {openFolder.photos.length}</span>
+                    <button type="button" onClick={() => {
+                      const next = photoIndex + 1
+                      setPhotoIndex(next)
+                      setSelectedPhoto({ ...openFolder.photos![next], src: openFolder.photos![next].src! })
+                    }} aria-label="Next photo" disabled={photoIndex === openFolder.photos.length - 1} className="border border-archive-border bg-archive-card px-3 py-1 text-archive-text disabled:cursor-not-allowed disabled:opacity-40">&gt;</button>
+                  </div>
+                )}
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
 
       {/* About overlay */}
       {showAbout && <AboutWindow onClose={() => setShowAbout(false)} />}
