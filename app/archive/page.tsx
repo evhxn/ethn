@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { RetroStarfield } from "@/components/retro-starfield"
@@ -10,7 +10,6 @@ import { RandomCRTFlicker } from "@/components/archive/random-crt-flicker"
 import { RetroDropdown } from "@/components/archive/retro-dropdown"
 import { ArchiveWindow } from "@/components/archive/archive-window"
 import { HelperCharacter } from "@/components/archive/helper-character"
-import { Special3DOverlay } from "@/components/archive/special-3d-overlay"
 import { AboutWindow } from "@/components/archive/about-window"
 import { CursorPreview } from "@/components/archive/cursor-preview"
 
@@ -19,10 +18,17 @@ export default function ArchivePage() {
   const [openFolder, setOpenFolder] = useState<FolderItem | null>(null)
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
-  const [showSpecial, setShowSpecial] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
+  const [localTime, setLocalTime] = useState("")
+
+  useEffect(() => {
+    const updateTime = () => setLocalTime(new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date()))
+    updateTime()
+    const timer = window.setInterval(updateTime, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
 
   const closeMenu = () => setOpenMenu(null)
 
@@ -43,8 +49,6 @@ export default function ArchivePage() {
   ]
 
   const specialItems = [
-    { label: "3D Logo Viewer", onClick: () => setShowSpecial(true) },
-    { divider: true, label: "" },
     { label: "Restart", disabled: true },
     { label: "Shut Down", onClick: () => router.push("/") },
   ]
@@ -101,12 +105,8 @@ export default function ArchivePage() {
         />
 
         <div className="ml-auto flex items-center gap-3">
-          <span className="text-xs font-mono text-archive-textMuted">
-            {new Date().toLocaleDateString("en-US", {
-              weekday: "short",
-              month: "short",
-              day: "numeric",
-            })}
+          <span className="text-xs font-mono text-archive-textMuted" suppressHydrationWarning>
+            {localTime || "--:--:--"}
           </span>
         </div>
       </header>
@@ -190,6 +190,11 @@ export default function ArchivePage() {
                   </span>
                 )}
               </div>
+              {openFolder.href && (
+                <a href={openFolder.href} target="_blank" rel="noreferrer" className="mb-4 inline-block border border-archive-border bg-archive-card px-3 py-2 text-xs font-mono text-archive-text underline underline-offset-2 hover:bg-archive-highlight">
+                  Read the Research symposium article
+                </a>
+              )}
               {openFolder.content && (
                 <div className="mb-6 p-3 border border-archive-border rounded-sm bg-archive-card">
                   <div className="flex items-center gap-2 mb-2">
@@ -256,16 +261,16 @@ export default function ArchivePage() {
                 {openFolder?.photos && openFolder.photos.length > 1 && (
                   <div className="mt-2 flex items-center justify-between border-t border-archive-border pt-2 font-mono text-xs">
                     <button type="button" onClick={() => {
-                      const next = (photoIndex - 1 + openFolder.photos!.length) % openFolder.photos!.length
+                      const next = photoIndex - 1
                       setPhotoIndex(next)
                       setSelectedPhoto({ ...openFolder.photos![next], src: openFolder.photos![next].src! })
-                    }} aria-label="Previous photo" className="px-3 py-1 hover:bg-archive-highlight">&lt;</button>
+                    }} aria-label="Previous photo" disabled={photoIndex === 0} className="border border-archive-border bg-archive-card px-3 py-1 text-archive-text disabled:cursor-not-allowed disabled:opacity-40">&lt;</button>
                     <span>{photoIndex + 1} / {openFolder.photos.length}</span>
                     <button type="button" onClick={() => {
-                      const next = (photoIndex + 1) % openFolder.photos!.length
+                      const next = photoIndex + 1
                       setPhotoIndex(next)
                       setSelectedPhoto({ ...openFolder.photos![next], src: openFolder.photos![next].src! })
-                    }} aria-label="Next photo" className="px-3 py-1 hover:bg-archive-highlight">&gt;</button>
+                    }} aria-label="Next photo" disabled={photoIndex === openFolder.photos.length - 1} className="border border-archive-border bg-archive-card px-3 py-1 text-archive-text disabled:cursor-not-allowed disabled:opacity-40">&gt;</button>
                   </div>
                 )}
               </div>
@@ -273,9 +278,6 @@ export default function ArchivePage() {
           </div>
         )}
       </main>
-
-      {/* Special 3D overlay */}
-      {showSpecial && <Special3DOverlay onClose={() => setShowSpecial(false)} />}
 
       {/* About overlay */}
       {showAbout && <AboutWindow onClose={() => setShowAbout(false)} />}
