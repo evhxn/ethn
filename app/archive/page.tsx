@@ -29,7 +29,7 @@ export default function ArchivePage() {
     { label: "Open", shortcut: "\u2318O", disabled: true },
     { label: "Print", shortcut: "\u2318P", disabled: true },
     { divider: true, label: "" },
-    { label: "Close Window", onClick: () => router.push("/") },
+    { label: "Close Window", onClick: () => window.close() },
     { label: "Find...", shortcut: "\u2318F", disabled: true },
   ]
 
@@ -113,7 +113,7 @@ export default function ArchivePage() {
       <main className="relative z-10 p-4 md:p-8 min-h-[calc(100vh-32px)]">
         <ArchiveWindow
           title={"Ethan's Project Archive"}
-          onClose={() => router.push("/")}
+          onClose={() => window.close()}
           className="max-w-4xl mx-auto"
         >
           <div className="flex items-center gap-1 mb-4 pb-2 border-b border-archive-border">
