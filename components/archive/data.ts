@@ -21,7 +21,7 @@ export const PROJECT_FOLDERS: FolderItem[] = [
   {
     name: "Heritage Fest",
     type: "folder",
-    look: "Look 001",
+    look: "Heritage Fest",
     collection: "Live Systems",
     season: "2025",
     content:
@@ -30,7 +30,7 @@ export const PROJECT_FOLDERS: FolderItem[] = [
   {
     name: "F.I.S.H.Bot",
     type: "folder",
-    look: "Look 002",
+    look: "F.I.S.H.Bot",
     collection: "Robotics",
     content:
       "Developed an autonomous fish-inspired swimming hydro robot in C++.\nImplemented particle image velocimetry in Python for flow dynamics analysis.\nBacked by a $4,000 University research grant.",
@@ -39,15 +39,20 @@ export const PROJECT_FOLDERS: FolderItem[] = [
   {
     name: "Corgicade",
     type: "folder",
-    look: "Look 003",
+    look: "Corgicade",
     collection: "Hardware",
     content:
       "Designed and built a modular arcade cabinet using AutoCAD.\nIntegrated dual monitors, custom lighting, and a PC-based emulator\nfor a retro gaming experience.",
+    photos: [
+      { name: "Grand Reveal", src: "/images/projects/Corgi1.jpeg", alt: "Corgicade arcade cabinet grand reveal" },
+      { name: "Cabinet Assembly", src: "/images/projects/Corgi2.jpeg", alt: "Team assembling the Corgicade cabinet" },
+      { name: "Arcade Testing", src: "/images/projects/Corgi3.jpeg", alt: "Corgicade arcade cabinet during testing" },
+    ],
   },
   {
     name: "Snake Game",
     type: "folder",
-    look: "Look 004",
+    look: "Snake Game",
     collection: "Hardware",
     content:
       "Designed and built a yin-yang-inspired Snake Game enclosure for a 3D printing class.\nCombined 3D modeling, soldering, and embedded electronics into a functional tabletop game.",
@@ -60,7 +65,7 @@ export const PROJECT_FOLDERS: FolderItem[] = [
   {
     name: "Research",
     type: "folder",
-    look: "Look 005",
+    look: "Research",
     collection: "Software",
     content:
       "Conducted tensile and bending tests on 3D-printed fish-scale-inspired braces.\nAchieved a 25% strength boost through pattern reformation.\nPython and R for statistical modeling.",
@@ -68,9 +73,9 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     href: "https://blogs.chapman.edu/engineering/2023/12/02/chapman-engineering-students-present-real-world-solutions-at-the-fall-student-scholar-symposium/",
   },
   {
-    name: "R2-D2 Replica",
+    name: "R2D2",
     type: "folder",
-    look: "Look 005",
+    look: "R2D2",
     collection: "Fabrication",
     season: "2025",
     content: "Designed and fabricated a full-scale R2-D2 replica with 3D-printed components and custom electronics.",
@@ -83,7 +88,7 @@ export const PROJECT_FOLDERS: FolderItem[] = [
   {
     name: "Aphex Clock",
     type: "folder",
-    look: "Look 006",
+    look: "Aphex Clock",
     collection: "Fabrication",
     season: "2025",
     content: "Designed and built an Aphex Twin-inspired 3D-printed clock with a glow-in-the-dark face.",
@@ -98,7 +103,6 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     type: "link",
     href: "https://www.linkedin.com/in/ethn/",
   },
-  { name: "Photos", type: "coming-soon" },
   { name: "Assets", type: "coming-soon" },
   { name: "Schematics", type: "coming-soon" },
 ]

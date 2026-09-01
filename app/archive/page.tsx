@@ -22,6 +22,7 @@ export default function ArchivePage() {
   const [showSpecial, setShowSpecial] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
+  const [photoIndex, setPhotoIndex] = useState(0)
 
   const closeMenu = () => setOpenMenu(null)
 
@@ -117,8 +118,9 @@ export default function ArchivePage() {
           onClose={() => window.close()}
           className="max-w-4xl mx-auto"
         >
-          <div className="flex items-center gap-1 mb-4 pb-2 border-b border-archive-border">
+          <div className="flex flex-col gap-1 mb-4 pb-2 border-b border-archive-border">
             <span className="text-xs font-mono text-archive-textMuted">{"Desktop > Archive"}</span>
+            <span className="text-[10px] font-mono text-archive-textMuted">Double-click a project folder to open it; click a photo to view it larger.</span>
           </div>
 
           {/* Folder Grid */}
@@ -209,7 +211,12 @@ export default function ArchivePage() {
                         key={photo.name}
                         type="button"
                         data-preview={photo.src}
-                        onClick={() => photo.src && setSelectedPhoto({ ...photo, src: photo.src })}
+                        onClick={() => {
+                          if (photo.src) {
+                            setPhotoIndex(openFolder.photos?.findIndex((item) => item.name === photo.name) ?? 0)
+                            setSelectedPhoto({ ...photo, src: photo.src })
+                          }
+                        }}
                         className="flex flex-col items-center gap-1.5 p-2 rounded-sm border border-archive-border bg-archive-card hover:bg-archive-highlight/30 transition-colors cursor-pointer"
                         aria-label={`Open ${photo.name}`}
                       >
@@ -246,6 +253,21 @@ export default function ArchivePage() {
               </div>
               <div className="bg-archive-card p-3">
                 <Image src={selectedPhoto.src} alt={selectedPhoto.alt ?? selectedPhoto.name} width={1400} height={1000} className="max-h-[72vh] w-full object-contain" />
+                {openFolder?.photos && openFolder.photos.length > 1 && (
+                  <div className="mt-2 flex items-center justify-between border-t border-archive-border pt-2 font-mono text-xs">
+                    <button type="button" onClick={() => {
+                      const next = (photoIndex - 1 + openFolder.photos!.length) % openFolder.photos!.length
+                      setPhotoIndex(next)
+                      setSelectedPhoto({ ...openFolder.photos![next], src: openFolder.photos![next].src! })
+                    }} aria-label="Previous photo" className="px-3 py-1 hover:bg-archive-highlight">&lt;</button>
+                    <span>{photoIndex + 1} / {openFolder.photos.length}</span>
+                    <button type="button" onClick={() => {
+                      const next = (photoIndex + 1) % openFolder.photos!.length
+                      setPhotoIndex(next)
+                      setSelectedPhoto({ ...openFolder.photos![next], src: openFolder.photos![next].src! })
+                    }} aria-label="Next photo" className="px-3 py-1 hover:bg-archive-highlight">&gt;</button>
+                  </div>
+                )}
               </div>
             </section>
           </div>
