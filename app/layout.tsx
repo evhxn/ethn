@@ -14,9 +14,9 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Ethan Tapia | Systems & Software Engineer",
+  title: "Ethan's Archive",
   description:
-    "Computer Science student at Chapman University specializing in systems programming, embedded systems, and entertainment technology.",
+    "cool guy.",
 }
 
 export const viewport: Viewport = {

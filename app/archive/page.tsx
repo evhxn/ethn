@@ -4,9 +4,11 @@ import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { RetroStarfield } from "@/components/retro-starfield"
+import { Ascii3DLogo } from "@/components/ascii-3d-logo"
 import { PROJECT_FOLDERS, type FolderItem } from "@/components/archive/data"
 import { FolderIcon, LinkedInFolderIcon, PhotoIcon, ComingSoonIcon } from "@/components/archive/icons"
 import { RandomCRTFlicker } from "@/components/archive/random-crt-flicker"
+import { RetroToggle } from "@/components/archive/retro-toggle"
 import { RetroDropdown } from "@/components/archive/retro-dropdown"
 import { ArchiveWindow } from "@/components/archive/archive-window"
 import { HelperCharacter } from "@/components/archive/helper-character"
@@ -21,12 +23,31 @@ export default function ArchivePage() {
   const [showAbout, setShowAbout] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
+  const [localDate, setLocalDate] = useState("")
   const [localTime, setLocalTime] = useState("")
+  const [flickerEnabled, setFlickerEnabled] = useState(true)
 
   useEffect(() => {
-    const updateTime = () => setLocalTime(new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date()))
-    updateTime()
-    const timer = window.setInterval(updateTime, 1000)
+    const stored = window.localStorage.getItem("archive-crt-flicker")
+    if (stored !== null) setFlickerEnabled(stored === "true")
+  }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem("archive-crt-flicker", String(flickerEnabled))
+  }, [flickerEnabled])
+
+  useEffect(() => {
+    const updateClock = () => {
+      const now = new Date()
+      setLocalDate(
+        new Intl.DateTimeFormat(undefined, { weekday: "short", month: "short", day: "numeric" }).format(now),
+      )
+      setLocalTime(
+        new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(now),
+      )
+    }
+    updateClock()
+    const timer = window.setInterval(updateClock, 1000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -64,9 +85,16 @@ export default function ArchivePage() {
       {/* Retro symbol starfield */}
       <RetroStarfield />
 
+      {/* Spinning ASCII "E" — a nod to donut.c, tucked in the corner */}
+      <Ascii3DLogo />
+
       {/* CRT Overlays */}
-      <div className="crt-static pointer-events-none fixed inset-0 z-[60]" />
-      <RandomCRTFlicker />
+      {flickerEnabled && (
+        <>
+          <div className="crt-static pointer-events-none fixed inset-0 z-[60]" />
+          <RandomCRTFlicker />
+        </>
+      )}
 
       {/* Couture-motion layer: cursor-follow preview */}
       <CursorPreview />
@@ -105,6 +133,15 @@ export default function ArchivePage() {
         />
 
         <div className="ml-auto flex items-center gap-3">
+          <RetroToggle
+            checked={flickerEnabled}
+            onChange={setFlickerEnabled}
+            label="CRT"
+            ariaLabel="Toggle CRT flicker effect"
+          />
+          <span className="text-xs font-mono text-archive-textMuted" suppressHydrationWarning>
+            {localDate || "--- --- --"}
+          </span>
           <span className="text-xs font-mono text-archive-textMuted" suppressHydrationWarning>
             {localTime || "--:--:--"}
           </span>
