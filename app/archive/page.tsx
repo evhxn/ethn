@@ -21,6 +21,7 @@ export default function ArchivePage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showSpecial, setShowSpecial] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
 
   const closeMenu = () => setOpenMenu(null)
 
@@ -204,16 +205,19 @@ export default function ArchivePage() {
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {openFolder.photos.map((photo) => (
-                      <div
+                      <button
                         key={photo.name}
+                        type="button"
                         data-preview={photo.src}
-                        className="flex flex-col items-center gap-1.5 p-2 rounded-sm border border-archive-border bg-archive-card hover:bg-archive-highlight/30 transition-colors"
+                        onClick={() => photo.src && setSelectedPhoto({ ...photo, src: photo.src })}
+                        className="flex flex-col items-center gap-1.5 p-2 rounded-sm border border-archive-border bg-archive-card hover:bg-archive-highlight/30 transition-colors cursor-pointer"
+                        aria-label={`Open ${photo.name}`}
                       >
                         <PhotoIcon className="w-10 h-10" />
                         <span className="text-[10px] font-mono text-archive-textMuted text-center truncate w-full">
                           {photo.name}
                         </span>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -224,6 +228,26 @@ export default function ArchivePage() {
                 </span>
               </div>
             </ArchiveWindow>
+          </div>
+        )}
+
+        {selectedPhoto && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onClick={() => setSelectedPhoto(null)}>
+            <section
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedPhoto.name} photo viewer`}
+              className="relative w-full max-w-4xl border-2 border-archive-border bg-archive-menubar p-1 shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between bg-archive-highlight px-2 py-1 text-xs font-mono text-archive-highlightText">
+                <span>{selectedPhoto.name} — Photo Viewer</span>
+                <button type="button" onClick={() => setSelectedPhoto(null)} className="border border-archive-border px-2 leading-none hover:bg-archive-card" aria-label="Close photo viewer">×</button>
+              </div>
+              <div className="bg-archive-card p-3">
+                <Image src={selectedPhoto.src} alt={selectedPhoto.alt ?? selectedPhoto.name} width={1400} height={1000} className="max-h-[72vh] w-full object-contain" />
+              </div>
+            </section>
           </div>
         )}
       </main>

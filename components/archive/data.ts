@@ -26,11 +26,6 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     season: "2025",
     content:
       "Led technical and creative design for large-scale projection-mapped shows.\nEmployed AutoCAD for projector placement and facility-scale design.\nIncreased attendee engagement by 75% through iterative testing and feedback.",
-    photos: [
-      { name: "Grand Reveal", src: "/images/projects/Corgi1.jpeg", alt: "Corgicade arcade cabinet grand reveal" },
-      { name: "Cabinet Assembly", src: "/images/projects/Corgi2.jpeg", alt: "Team assembling the Corgicade cabinet" },
-      { name: "Arcade Testing", src: "/images/projects/Corgi3.jpeg", alt: "Corgicade arcade cabinet during testing" },
-    ],
   },
   {
     name: "F.I.S.H.Bot",
@@ -48,6 +43,14 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     collection: "Hardware",
     content:
       "Designed and built a modular arcade cabinet using AutoCAD.\nIntegrated dual monitors, custom lighting, and a PC-based emulator\nfor a retro gaming experience.",
+  },
+  {
+    name: "Snake Game",
+    type: "folder",
+    look: "Look 004",
+    collection: "Hardware",
+    content:
+      "Designed and built a yin-yang-inspired Snake Game enclosure for a 3D printing class.\nCombined 3D modeling, soldering, and embedded electronics into a functional tabletop game.",
     photos: [
       { name: "Finalized Enclosure", src: "/images/projects/SnakeGame1.jpeg", alt: "Finalized Snake Game enclosure" },
       { name: "Finalized Enclosure (Back + Branding)", src: "/images/projects/SnakeGame2.jpeg", alt: "Back of the Snake Game enclosure" },
@@ -55,9 +58,9 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     ],
   },
   {
-    name: "Bent Into Shape",
+    name: "Research",
     type: "folder",
-    look: "Look 004",
+    look: "Look 005",
     collection: "Software",
     content:
       "Conducted tensile and bending tests on 3D-printed fish-scale-inspired braces.\nAchieved a 25% strength boost through pattern reformation.\nPython and R for statistical modeling.",
