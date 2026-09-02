@@ -26,7 +26,7 @@ interface ShootingStar {
 
 const SYMBOLS = ["+", "-", "*", "%", "#", "&", "^", "~", ".", ":", "|", "/", "\\", "=", "<", ">", "0", "1", "'", "`", "°"]
 
-const COOL = { r: 200, g: 215, b: 255 }
+export const COOL = { r: 200, g: 215, b: 255 }
 const WARM = { r: 255, g: 205, b: 150 }
 
 function mixColor(hue: number) {

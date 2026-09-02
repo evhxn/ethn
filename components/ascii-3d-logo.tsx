@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useReducedMotion } from "@/hooks/use-reduced-motion"
+import { COOL } from "@/components/retro-starfield"
 
 /**
  * A tiny homage to Andy Sloane's spinning ASCII donut, retargeted at the
@@ -243,7 +244,7 @@ export function Ascii3DLogo() {
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
       if (hoveredRef.current) {
-        ctx.shadowColor = "rgba(130, 210, 255, 0.8)"
+        ctx.shadowColor = `rgba(${COOL.r}, ${COOL.g}, ${COOL.b}, 0.8)`
         ctx.shadowBlur = 6
       } else {
         ctx.shadowBlur = 0
@@ -256,7 +257,7 @@ export function Ascii3DLogo() {
           if (ch === " ") continue
           const baseAlpha = hoveredRef.current ? 0.4 : 0.22
           const alpha = baseAlpha + litGrid[idx] * 0.6
-          ctx.fillStyle = `rgba(130, 210, 255, ${Math.min(0.95, alpha)})`
+          ctx.fillStyle = `rgba(${COOL.r}, ${COOL.g}, ${COOL.b}, ${Math.min(0.95, alpha)})`
           ctx.fillText(ch, col * CHAR_W + CHAR_W / 2, row * CHAR_H + CHAR_H / 2)
         }
       }
