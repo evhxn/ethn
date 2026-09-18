@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useCallback } from "react"
 import { useReducedMotion } from "@/hooks/use-reduced-motion"
+import { onShowControlCue } from "@/lib/show-control-events"
 
 interface SymbolStar {
   x: number
@@ -43,7 +44,29 @@ export function RetroStarfield() {
   const shootingStarsRef = useRef<ShootingStar[]>([])
   const animationRef = useRef<number>(0)
   const mouseRef = useRef({ x: -1, y: -1 })
+  const burstBoostUntilRef = useRef(0)
   const reducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (reducedMotion) return
+    return onShowControlCue((cue) => {
+      if (cue !== "burst") return
+      const canvas = canvasRef.current
+      const width = canvas?.width ?? window.innerWidth
+      const height = canvas?.height ?? window.innerHeight
+      for (let i = 0; i < 5; i++) {
+        shootingStarsRef.current.push({
+          x: Math.random() * width * 0.6,
+          y: Math.random() * height * 0.35,
+          vx: 4 + Math.random() * 3,
+          vy: 1.5 + Math.random() * 2,
+          life: -i * 4,
+          maxLife: 55 + Math.random() * 25,
+        })
+      }
+      burstBoostUntilRef.current = performance.now() + 700
+    })
+  }, [reducedMotion])
 
   const initStars = useCallback((width: number, height: number) => {
     const stars: SymbolStar[] = []
@@ -141,6 +164,7 @@ export function RetroStarfield() {
       const now = Date.now() * 0.001
       const mx = mouseRef.current.x
       const my = mouseRef.current.y
+      const bursting = performance.now() < burstBoostUntilRef.current
 
       for (const star of starsRef.current) {
         // Twinkle: oscillate opacity
@@ -157,6 +181,11 @@ export function RetroStarfield() {
             const boost = 1 - dist / radius
             finalOpacity = Math.min(0.95, finalOpacity + boost * 0.55)
           }
+        }
+
+        // Show Control "burst" cue: a brief flash across the whole field
+        if (bursting) {
+          finalOpacity = Math.min(0.95, finalOpacity + 0.3)
         }
 
         const { r, g, b } = mixColor(star.hue)

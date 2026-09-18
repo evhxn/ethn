@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useReducedMotion } from "@/hooks/use-reduced-motion"
 import { COOL } from "@/components/retro-starfield"
+import { onShowControlCue } from "@/lib/show-control-events"
 
 /**
  * A tiny homage to Andy Sloane's spinning ASCII donut, retargeted at the
@@ -169,6 +170,8 @@ export function Ascii3DLogo() {
   const draggingRef = useRef(false)
   const lastPointerRef = useRef({ x: 0, y: 0 })
   const hoveredRef = useRef(false)
+  const tweenRef = useRef<{ active: boolean; fromYaw: number; toYaw: number; fromTilt: number; toTilt: number; start: number; duration: number } | null>(null)
+  const holdUntilRef = useRef(0)
   const [hovered, setHovered] = useState(false)
   const [dragging, setDragging] = useState(false)
   const reducedMotion = useReducedMotion()
@@ -176,6 +179,27 @@ export function Ascii3DLogo() {
   useEffect(() => {
     hoveredRef.current = hovered
   }, [hovered])
+
+  useEffect(() => {
+    return onShowControlCue((cue) => {
+      if (cue === "figure-to-show") {
+        const targetYaw = Math.round(yawRef.current / (Math.PI * 2)) * (Math.PI * 2)
+        tweenRef.current = {
+          active: true,
+          fromYaw: yawRef.current,
+          toYaw: targetYaw,
+          fromTilt: tiltRef.current,
+          toTilt: 0.12,
+          start: performance.now(),
+          duration: 700,
+        }
+      } else if (cue === "burst" && !draggingRef.current) {
+        holdUntilRef.current = 0
+        if (tweenRef.current) tweenRef.current.active = false
+        velocityRef.current.yaw = velocityRef.current.yaw >= 0 ? 0.26 : -0.26
+      }
+    })
+  }, [])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -269,7 +293,22 @@ export function Ascii3DLogo() {
     }
 
     const animate = () => {
-      if (!draggingRef.current) {
+      const now = performance.now()
+      const tween = tweenRef.current
+
+      if (tween?.active) {
+        const t = Math.min(1, (now - tween.start) / tween.duration)
+        const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+        yawRef.current = tween.fromYaw + (tween.toYaw - tween.fromYaw) * eased
+        tiltRef.current = tween.fromTilt + (tween.toTilt - tween.fromTilt) * eased
+        if (t >= 1) {
+          tween.active = false
+          holdUntilRef.current = now + 2500
+          velocityRef.current = { yaw: 0, tilt: 0 }
+        }
+      } else if (now < holdUntilRef.current) {
+        // Holding at show position — no idle drift.
+      } else if (!draggingRef.current) {
         yawRef.current += velocityRef.current.yaw
         tiltRef.current += velocityRef.current.tilt
 

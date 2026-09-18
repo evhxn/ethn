@@ -13,6 +13,7 @@ import { RetroDropdown } from "@/components/archive/retro-dropdown"
 import { ArchiveWindow } from "@/components/archive/archive-window"
 import { HelperCharacter } from "@/components/archive/helper-character"
 import { AboutWindow } from "@/components/archive/about-window"
+import { ShowControlWindow } from "@/components/archive/show-control-window"
 import { CursorPreview } from "@/components/archive/cursor-preview"
 
 export default function ArchivePage() {
@@ -21,6 +22,7 @@ export default function ArchivePage() {
   const [selectedItem, setSelectedItem] = useState<string | null>(null)
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showAbout, setShowAbout] = useState(false)
+  const [showShowControl, setShowShowControl] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [localDate, setLocalDate] = useState("")
@@ -70,6 +72,8 @@ export default function ArchivePage() {
   ]
 
   const specialItems = [
+    { label: "Show Control", onClick: () => setShowShowControl(true) },
+    { divider: true, label: "" },
     { label: "Restart", disabled: true },
     { label: "Shut Down", onClick: () => router.push("/") },
   ]
@@ -229,7 +233,7 @@ export default function ArchivePage() {
               </div>
               {openFolder.href && (
                 <a href={openFolder.href} target="_blank" rel="noreferrer" className="mb-4 inline-block border border-archive-border bg-archive-card px-3 py-2 text-xs font-mono text-archive-text underline underline-offset-2 hover:bg-archive-highlight">
-                  Read the Research symposium article
+                  {openFolder.linkLabel ?? "View Attachment"}
                 </a>
               )}
               {openFolder.content && (
@@ -318,6 +322,18 @@ export default function ArchivePage() {
 
       {/* About overlay */}
       {showAbout && <AboutWindow onClose={() => setShowAbout(false)} />}
+
+      {/* Show Control overlay */}
+      {showShowControl && (
+        <ShowControlWindow
+          onClose={() => setShowShowControl(false)}
+          onOpenFolder={(name) => {
+            const folder = PROJECT_FOLDERS.find((item) => item.name === name)
+            if (folder) setOpenFolder(folder)
+          }}
+          onCloseFolder={() => setOpenFolder(null)}
+        />
+      )}
 
       {/* Helper character */}
       <HelperCharacter />

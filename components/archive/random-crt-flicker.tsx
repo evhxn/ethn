@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react"
 import { useReducedMotion } from "@/hooks/use-reduced-motion"
+import { onShowControlCue } from "@/lib/show-control-events"
 
 /**
  * Continuous warm-tint flicker layered over the archive desktop.
@@ -9,7 +10,15 @@ import { useReducedMotion } from "@/hooks/use-reduced-motion"
  */
 export function RandomCRTFlicker() {
   const flickerRef = useRef<HTMLDivElement>(null)
+  const boostUntilRef = useRef(0)
   const reducedMotion = useReducedMotion()
+
+  useEffect(() => {
+    if (reducedMotion) return
+    return onShowControlCue((cue) => {
+      if (cue === "preheat") boostUntilRef.current = performance.now() + 1500
+    })
+  }, [reducedMotion])
 
   useEffect(() => {
     const el = flickerRef.current
@@ -18,7 +27,8 @@ export function RandomCRTFlicker() {
     let animationId: number
 
     const flicker = () => {
-      const intensity = 0.005 + Math.random() * 0.025
+      const boosted = performance.now() < boostUntilRef.current
+      const intensity = boosted ? 0.02 + Math.random() * 0.09 : 0.005 + Math.random() * 0.025
       const r = 255
       const g = 245 + Math.floor(Math.random() * 10)
       const b = 215 + Math.floor(Math.random() * 30)
