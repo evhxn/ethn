@@ -23,8 +23,9 @@ export default function ArchivePage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showAbout, setShowAbout] = useState(false)
   const [showShowControl, setShowShowControl] = useState(false)
-  const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string } | null>(null)
+  const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string; viewerLabel?: string } | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
+  const [zoomed, setZoomed] = useState(false)
   const [localDate, setLocalDate] = useState("")
   const [localTime, setLocalTime] = useState("")
   const [flickerEnabled, setFlickerEnabled] = useState(true)
@@ -52,6 +53,10 @@ export default function ArchivePage() {
     const timer = window.setInterval(updateClock, 1000)
     return () => window.clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    setZoomed(false)
+  }, [selectedPhoto?.src])
 
   const closeMenu = () => setOpenMenu(null)
 
@@ -153,11 +158,14 @@ export default function ArchivePage() {
       </header>
 
       {/* Main Desktop */}
-      <main className="relative z-10 p-4 md:p-8 min-h-[calc(100vh-32px)]">
+      {/* pointer-events-none here so empty desktop space doesn't intercept clicks meant
+          for background decoration (ascii logo, starfield) behind it — real content
+          re-enables pointer-events-auto itself. */}
+      <main className="relative z-10 p-4 md:p-8 min-h-[calc(100vh-32px)] pointer-events-none">
         <ArchiveWindow
           title={"Ethan's Project Archive"}
           onClose={() => window.close()}
-          className="max-w-4xl mx-auto"
+          className="max-w-4xl mx-auto pointer-events-auto"
         >
           <div className="flex flex-col gap-1 mb-4 pb-2 border-b border-archive-border">
             <span className="text-xs font-mono text-archive-textMuted">{"Desktop > Archive"}</span>
@@ -176,6 +184,9 @@ export default function ArchivePage() {
                 onDoubleClick={() => {
                   if (item.type === "link" && item.href) {
                     window.open(item.href, "_blank", "noopener,noreferrer")
+                  } else if (item.type === "folder" && item.directPhoto && item.photos?.[0]?.src) {
+                    setPhotoIndex(0)
+                    setSelectedPhoto({ ...item.photos[0], src: item.photos[0].src })
                   } else if (item.type === "folder") {
                     setOpenFolder(item)
                   }
@@ -211,7 +222,7 @@ export default function ArchivePage() {
 
         {/* Open Folder Overlay */}
         {openFolder && (
-          <div className="fixed inset-0 z-30 flex items-center justify-center p-4 md:p-8">
+          <div className="pointer-events-auto fixed inset-0 z-30 flex items-center justify-center p-4 md:p-8">
             <div className="absolute inset-0 bg-black/20" onClick={() => setOpenFolder(null)} />
             <ArchiveWindow
               title={openFolder.name}
@@ -285,20 +296,30 @@ export default function ArchivePage() {
         )}
 
         {selectedPhoto && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onClick={() => setSelectedPhoto(null)}>
+          <div className="pointer-events-auto fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" onClick={() => setSelectedPhoto(null)}>
             <section
               role="dialog"
               aria-modal="true"
-              aria-label={`${selectedPhoto.name} photo viewer`}
-              className="relative w-full max-w-4xl border-2 border-archive-border bg-archive-menubar p-1 shadow-2xl"
+              aria-label={`${selectedPhoto.name} ${selectedPhoto.viewerLabel ?? "Photo Viewer"}`}
+              className={`relative flex max-h-[90vh] flex-col border-2 border-archive-border bg-archive-menubar p-1 shadow-2xl ${zoomed ? "w-full max-w-[95vw]" : "w-full max-w-4xl"}`}
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex items-center justify-between bg-archive-highlight px-2 py-1 text-xs font-mono text-archive-highlightText">
-                <span>{selectedPhoto.name} — Photo Viewer</span>
-                <button type="button" onClick={() => setSelectedPhoto(null)} className="border border-archive-border px-2 leading-none hover:bg-archive-card" aria-label="Close photo viewer">×</button>
+              <div className="flex shrink-0 items-center justify-between bg-archive-highlight px-2 py-1 text-xs font-mono text-archive-highlightText">
+                <span>{selectedPhoto.name} — {selectedPhoto.viewerLabel ?? "Photo Viewer"}</span>
+                <div className="flex items-center gap-2">
+                  <button type="button" onClick={() => setZoomed((z) => !z)} className="border border-archive-border px-2 py-0.5 hover:bg-archive-card">{zoomed ? "Fit" : "Zoom"}</button>
+                  <button type="button" onClick={() => setSelectedPhoto(null)} className="border border-archive-border px-2 leading-none hover:bg-archive-card" aria-label="Close photo viewer">×</button>
+                </div>
               </div>
-              <div className="bg-archive-card p-3">
-                <Image src={selectedPhoto.src} alt={selectedPhoto.alt ?? selectedPhoto.name} width={1400} height={1000} className="max-h-[72vh] w-full object-contain" />
+              <div className="flex-1 overflow-x-hidden overflow-y-auto bg-archive-card p-3" data-lenis-prevent>
+                <Image
+                  src={selectedPhoto.src}
+                  alt={selectedPhoto.alt ?? selectedPhoto.name}
+                  width={1400}
+                  height={1000}
+                  onClick={() => setZoomed((z) => !z)}
+                  className={zoomed ? "h-auto w-full cursor-zoom-out" : "max-h-[72vh] w-full cursor-zoom-in object-contain"}
+                />
                 {openFolder?.photos && openFolder.photos.length > 1 && (
                   <div className="mt-2 flex items-center justify-between border-t border-archive-border pt-2 font-mono text-xs">
                     <button type="button" onClick={() => {

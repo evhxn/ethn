@@ -3,6 +3,8 @@ export interface FolderPhoto {
   /** Real image path under /public — Phase 2 fills these in */
   src?: string
   alt?: string
+  /** Suffix shown in the viewer titlebar, e.g. "Photo Viewer" or "PDF Viewer". */
+  viewerLabel?: string
 }
 
 export interface FolderItem {
@@ -13,6 +15,8 @@ export interface FolderItem {
   href?: string
   /** Label for the button rendered when `href` is set — defaults to a generic prompt. */
   linkLabel?: string
+  /** Skip the folder window and open straight into the photo viewer on the first photo. */
+  directPhoto?: boolean
   /** Fashion-archive metadata — Phase 2 index filters read these */
   look?: string
   collection?: string
@@ -105,8 +109,8 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     name: "Resume",
     type: "folder",
     content: "Software Engineering Intern at The Walt Disney Company — real-time attraction control systems, Beckhoff TwinCAT/EtherCAT, Elmo servo drives, and animatronic system commissioning with Walt Disney Imagineering.",
-    href: "/Ethan_Tapia_Resume.pdf",
-    linkLabel: "Open Resume (PDF)",
+    photos: [{ name: "Resume", src: "/images/resume/page-1.png", alt: "Ethan Tapia resume", viewerLabel: "PDF Viewer" }],
+    directPhoto: true,
   },
   {
     name: "LinkedIn",

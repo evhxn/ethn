@@ -358,7 +358,7 @@ export function Ascii3DLogo() {
 
   return (
     <div
-      className="fixed bottom-3 left-3 z-20 select-none"
+      className="fixed bottom-3 left-3 z-[1] select-none"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       title="click and drag to spin"
