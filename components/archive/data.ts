@@ -11,6 +11,8 @@ export interface FolderItem {
   content?: string
   photos?: FolderPhoto[]
   href?: string
+  /** Label for the button rendered when `href` is set — defaults to a generic prompt. */
+  linkLabel?: string
   /** Fashion-archive metadata — Phase 2 index filters read these */
   look?: string
   collection?: string
@@ -71,6 +73,7 @@ export const PROJECT_FOLDERS: FolderItem[] = [
       "Conducted tensile and bending tests on 3D-printed fish-scale-inspired braces.\nAchieved a 25% strength boost through pattern reformation.\nPython and R for statistical modeling.",
     photos: [{ name: "Bent Into Shape", src: "/images/projects/Bent.jpg", alt: "Bent Into Shape research symposium poster" }],
     href: "https://blogs.chapman.edu/engineering/2023/12/02/chapman-engineering-students-present-real-world-solutions-at-the-fall-student-scholar-symposium/",
+    linkLabel: "Read the Research symposium article",
   },
   {
     name: "R2D2",
@@ -97,6 +100,13 @@ export const PROJECT_FOLDERS: FolderItem[] = [
       { name: "Back Clock", src: "/images/projects/Aphex2.jpeg", alt: "Back of the Aphex-inspired clock" },
       { name: "Clock in the Dark", src: "/images/projects/Aphex3.jpeg", alt: "Aphex-inspired clock glowing in the dark" },
     ],
+  },
+  {
+    name: "Resume",
+    type: "folder",
+    content: "Software Engineering Intern at The Walt Disney Company — real-time attraction control systems, Beckhoff TwinCAT/EtherCAT, Elmo servo drives, and animatronic system commissioning with Walt Disney Imagineering.",
+    href: "/Ethan_Tapia_Resume.pdf",
+    linkLabel: "Open Resume (PDF)",
   },
   {
     name: "LinkedIn",
