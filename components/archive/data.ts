@@ -27,11 +27,6 @@ export interface FolderItem {
 
 export const PROJECT_FOLDERS: FolderItem[] = [
   {
-    name: "Motion Studio",
-    type: "app",
-    app: "motion-studio",
-  },
-  {
     name: "Heritage Fest",
     type: "folder",
     look: "Heritage Fest",
@@ -118,6 +113,11 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     content: "Software Engineering Intern at The Walt Disney Company — real-time attraction control systems, Beckhoff TwinCAT/EtherCAT, Elmo servo drives, and animatronic system commissioning with Walt Disney Imagineering.",
     photos: [{ name: "Resume", src: "/images/resume/page-1.png", alt: "Ethan Tapia resume", viewerLabel: "PDF Viewer" }],
     directPhoto: true,
+  },
+  {
+    name: "Motion Studio",
+    type: "app",
+    app: "motion-studio",
   },
   {
     name: "LinkedIn",
