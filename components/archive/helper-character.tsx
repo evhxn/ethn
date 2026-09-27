@@ -19,6 +19,11 @@ export function HelperCharacter() {
         "You can reach Ethan at etapia@chapman.edu or connect on LinkedIn at linkedin.com/in/ethn. He's based in Anaheim, CA.",
     },
     {
+      label: "What's Motion Studio?",
+      response:
+        "It's Ethan's animatronic motion authoring tool! Perform in front of your webcam and it turns your head, jaw, and arm moves into smooth, servo-safe motion you can export to an Arduino. Double-click the Motion Studio icon to try it.",
+    },
+    {
       label: "What's this archive?",
       response:
         "This is Ethan's retro project archive -- a hidden Easter egg! Double-click any folder to explore project details and assets.",

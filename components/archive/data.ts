@@ -9,12 +9,14 @@ export interface FolderPhoto {
 
 export interface FolderItem {
   name: string
-  type: "folder" | "photo" | "coming-soon" | "link"
+  type: "folder" | "photo" | "coming-soon" | "link" | "app"
   content?: string
   photos?: FolderPhoto[]
   href?: string
   /** Label for the button rendered when `href` is set — defaults to a generic prompt. */
   linkLabel?: string
+  /** For `type: "app"` — which built-in program double-click launches. */
+  app?: "motion-studio"
   /** Skip the folder window and open straight into the photo viewer on the first photo. */
   directPhoto?: boolean
   /** Fashion-archive metadata — Phase 2 index filters read these */
@@ -111,6 +113,11 @@ export const PROJECT_FOLDERS: FolderItem[] = [
     content: "Software Engineering Intern at The Walt Disney Company — real-time attraction control systems, Beckhoff TwinCAT/EtherCAT, Elmo servo drives, and animatronic system commissioning with Walt Disney Imagineering.",
     photos: [{ name: "Resume", src: "/images/resume/page-1.png", alt: "Ethan Tapia resume", viewerLabel: "PDF Viewer" }],
     directPhoto: true,
+  },
+  {
+    name: "Motion Studio",
+    type: "app",
+    app: "motion-studio",
   },
   {
     name: "LinkedIn",

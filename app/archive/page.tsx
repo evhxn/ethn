@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { RetroStarfield } from "@/components/retro-starfield"
 import { Ascii3DLogo } from "@/components/ascii-3d-logo"
 import { PROJECT_FOLDERS, type FolderItem } from "@/components/archive/data"
-import { FolderIcon, LinkedInFolderIcon, PhotoIcon, ComingSoonIcon } from "@/components/archive/icons"
+import { FolderIcon, LinkedInFolderIcon, PhotoIcon, ComingSoonIcon, MotionStudioIcon } from "@/components/archive/icons"
 import { RandomCRTFlicker } from "@/components/archive/random-crt-flicker"
 import { RetroToggle } from "@/components/archive/retro-toggle"
 import { RetroDropdown } from "@/components/archive/retro-dropdown"
@@ -15,6 +15,7 @@ import { HelperCharacter } from "@/components/archive/helper-character"
 import { AboutWindow } from "@/components/archive/about-window"
 import { ShowControlWindow } from "@/components/archive/show-control-window"
 import { CursorPreview } from "@/components/archive/cursor-preview"
+import { MotionStudioWindow } from "@/components/archive/motion-studio/motion-studio-window"
 
 export default function ArchivePage() {
   const router = useRouter()
@@ -23,6 +24,7 @@ export default function ArchivePage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null)
   const [showAbout, setShowAbout] = useState(false)
   const [showShowControl, setShowShowControl] = useState(false)
+  const [showMotionStudio, setShowMotionStudio] = useState(false)
   const [selectedPhoto, setSelectedPhoto] = useState<{ name: string; src: string; alt?: string; viewerLabel?: string } | null>(null)
   const [photoIndex, setPhotoIndex] = useState(0)
   const [zoomed, setZoomed] = useState(false)
@@ -78,6 +80,7 @@ export default function ArchivePage() {
 
   const specialItems = [
     { label: "Show Control", onClick: () => setShowShowControl(true) },
+    { label: "Motion Studio", onClick: () => setShowMotionStudio(true) },
     { divider: true, label: "" },
     { label: "Restart", disabled: true },
     { label: "Shut Down", onClick: () => router.push("/") },
@@ -182,7 +185,9 @@ export default function ArchivePage() {
                 }`}
                 onClick={() => setSelectedItem(item.name)}
                 onDoubleClick={() => {
-                  if (item.type === "link" && item.href) {
+                  if (item.type === "app" && item.app === "motion-studio") {
+                    setShowMotionStudio(true)
+                  } else if (item.type === "link" && item.href) {
                     window.open(item.href, "_blank", "noopener,noreferrer")
                   } else if (item.type === "folder" && item.directPhoto && item.photos?.[0]?.src) {
                     setPhotoIndex(0)
@@ -192,6 +197,7 @@ export default function ArchivePage() {
                   }
                 }}
               >
+                {item.type === "app" && <MotionStudioIcon className="w-12 h-12 md:w-14 md:h-14 drop-shadow-sm" />}
                 {item.type === "folder" && <FolderIcon className="w-12 h-12 md:w-14 md:h-14 drop-shadow-sm" />}
                 {item.type === "link" && (
                   <LinkedInFolderIcon className="w-12 h-12 md:w-14 md:h-14 drop-shadow-sm" />
@@ -350,11 +356,18 @@ export default function ArchivePage() {
           onClose={() => setShowShowControl(false)}
           onOpenFolder={(name) => {
             const folder = PROJECT_FOLDERS.find((item) => item.name === name)
-            if (folder) setOpenFolder(folder)
+            if (folder?.type === "app") setShowMotionStudio(true)
+            else if (folder) setOpenFolder(folder)
           }}
-          onCloseFolder={() => setOpenFolder(null)}
+          onCloseFolder={() => {
+            setOpenFolder(null)
+            setShowMotionStudio(false)
+          }}
         />
       )}
+
+      {/* Motion Studio app */}
+      {showMotionStudio && <MotionStudioWindow onClose={() => setShowMotionStudio(false)} />}
 
       {/* Helper character */}
       <HelperCharacter />
