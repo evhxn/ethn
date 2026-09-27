@@ -1,287 +1,460 @@
-// Canvas renderer for the demo figure: an animatronic bust on a test stand,
-// drawn front-on in the archive's palette. Pure function of a channel frame
-// so the same code renders live tracking, playback, and the raw "before" view.
+// Figure renderer: a wooden artist's mannequin drawn as 1-bit dithered pixel
+// art, like a MacPaint plate — to sit alongside the archive's CRT/System-7
+// look. The face is a ventriloquist-style hinged jaw with carved eyes so the
+// jaw and lid channels still read at a glance.
+//
+// Rendering, per frame:
+//   1. Draw the figure at low resolution (one "art pixel" = PIXEL css px) on
+//      two offscreen layers: a grayscale *shading* layer (gradient fills) and
+//      a *line* layer (outlines, eyes, seams; white fills for occlusion).
+//   2. Combine: a pixel is ink if the line layer is dark, or if the shading
+//      layer is darker than a 4×4 Bayer threshold (ordered dithering).
+//   3. Blit to the visible canvas with nearest-neighbour scaling.
+//
+// "plate" mode is the finished figure on paper; "scope" mode is the same
+// geometry as a phosphor wireframe on a dark CRT, used for the raw capture.
 
 import type { ChannelFrame } from "@/lib/motion-studio/channels"
 
-const INK = "#1f1f1f"
-const SHELL = "#d4c89a"
-const SHELL_DARK = "#b8a862"
-const METAL = "#8a8a88"
-const METAL_DARK = "#5a5a58"
-const EYE = "#f0ecd8"
-const STAGE = "#1a1a1e"
-const GRID = "rgba(212, 200, 154, 0.08)"
+const PIXEL = 2
+const PAPER: [number, number, number] = [232, 228, 220]
+const INK: [number, number, number] = [36, 35, 32]
+const SCOPE_BG: [number, number, number] = [26, 26, 30]
+const PHOSPHOR: [number, number, number] = [212, 200, 154]
+const PHOSPHOR_DIM: [number, number, number] = [150, 142, 110]
+
+const BAYER4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map((v) => (v + 0.5) / 16)
 
 const RAD = Math.PI / 180
+/** Key light from upper left, in canvas coords (y down). */
+const LIGHT = { x: -0.55, y: -0.83 }
 
 export interface DrawOptions {
-  /** Faint outline of another pose (e.g. the raw target) behind the figure. */
+  /** Faint dotted outline of another pose (e.g. the raw target) behind the figure. */
   ghost?: ChannelFrame
-  /** Draw as a jittery wireframe — used for the raw "before" view. */
-  wire?: boolean
+  mode?: "plate" | "scope"
   label?: string
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath()
-  ctx.roundRect(x, y, w, h, r)
+interface Layers {
+  shade: HTMLCanvasElement
+  line: HTMLCanvasElement
 }
+const layerCache = new WeakMap<HTMLCanvasElement, Layers>()
 
-function limb(ctx: CanvasRenderingContext2D, x0: number, y0: number, angle: number, length: number, width: number, side: 1 | -1) {
-  const dx = side * Math.sin(angle * RAD)
-  const dy = Math.cos(angle * RAD)
-  const x1 = x0 + dx * length
-  const y1 = y0 + dy * length
-  ctx.save()
-  ctx.translate(x0, y0)
-  ctx.rotate(Math.atan2(dy, dx) - Math.PI / 2)
-  roundRect(ctx, -width / 2, 0, width, length, width / 2)
-  ctx.restore()
-  return [x1, y1] as const
-}
-
-function drawArm(ctx: CanvasRenderingContext2D, sx: number, sy: number, shoulder: number, elbow: number, s: number, side: 1 | -1, wire: boolean) {
-  const upper = 46 * s
-  const fore = 42 * s
-  const w = 13 * s
-  const style = () => {
-    if (wire) {
-      ctx.stroke()
-    } else {
-      ctx.fillStyle = SHELL
-      ctx.fill()
-      ctx.stroke()
+function getLayers(canvas: HTMLCanvasElement, w: number, h: number): Layers {
+  let l = layerCache.get(canvas)
+  if (!l) {
+    l = { shade: document.createElement("canvas"), line: document.createElement("canvas") }
+    layerCache.set(canvas, l)
+  }
+  for (const c of [l.shade, l.line]) {
+    if (c.width !== w || c.height !== h) {
+      c.width = w
+      c.height = h
     }
   }
-  ctx.lineWidth = 2
-  ctx.strokeStyle = wire ? SHELL : INK
-
-  const [ex, ey] = limb(ctx, sx, sy, shoulder, upper, w, side)
-  style()
-  const [hx, hy] = limb(ctx, ex, ey, shoulder + elbow, fore, w * 0.85, side)
-  style()
-
-  // Elbow servo + hand.
-  ctx.beginPath()
-  ctx.arc(ex, ey, 5.5 * s, 0, Math.PI * 2)
-  if (!wire) {
-    ctx.fillStyle = METAL
-    ctx.fill()
-  }
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(hx, hy, 7 * s, 0, Math.PI * 2)
-  if (!wire) {
-    ctx.fillStyle = SHELL_DARK
-    ctx.fill()
-  }
-  ctx.stroke()
-
-  // Shoulder servo horn.
-  ctx.beginPath()
-  ctx.arc(sx, sy, 9 * s, 0, Math.PI * 2)
-  if (!wire) {
-    ctx.fillStyle = METAL
-    ctx.fill()
-  }
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.moveTo(sx, sy)
-  ctx.lineTo(sx + side * Math.sin(shoulder * RAD) * 9 * s, sy + Math.cos(shoulder * RAD) * 9 * s)
-  ctx.stroke()
+  return l
 }
 
-function drawHead(ctx: CanvasRenderingContext2D, nx: number, ny: number, f: ChannelFrame, s: number, wire: boolean) {
-  const W = 88 * s
-  const H = 74 * s
-  // Yaw foreshortens the shell a little and slides the face across it;
-  // pitch slides the face vertically. Cheap, but reads clearly as 3D.
-  const yawShift = Math.sin(f.headYaw * RAD) * W * 0.3
-  const pitchShift = -Math.sin(f.headPitch * RAD) * H * 0.35
-  const shellW = W * (0.86 + 0.14 * Math.cos(f.headYaw * RAD))
+const gray = (v: number) => {
+  const c = Math.round(Math.min(Math.max(v, 0), 1) * 255)
+  return `rgb(${c},${c},${c})`
+}
 
-  ctx.save()
-  ctx.translate(nx, ny)
-  ctx.rotate(f.headRoll * RAD)
-  ctx.lineWidth = 2
-  ctx.strokeStyle = wire ? SHELL : INK
+// ---- Geometry ---------------------------------------------------------------
 
-  // Jaw drops below the upper shell, hinged at the back.
-  const jawDrop = Math.sin(f.jaw * RAD) * 30 * s
-  roundRect(ctx, -shellW * 0.36 + yawShift * 0.5, -H * 0.2 + jawDrop + pitchShift * 0.3, shellW * 0.72, H * 0.28, 6 * s)
-  if (!wire) {
-    ctx.fillStyle = SHELL_DARK
-    ctx.fill()
+type Ctx = CanvasRenderingContext2D
+
+type Fill = (c: Ctx) => string | CanvasGradient
+
+/** Draws the figure's parts; each painter decides how they land on the layers. */
+interface Painter {
+  /** A solid part: shaded fill + outline. */
+  shape(path: (c: Ctx) => void, fill: Fill): void
+  /** Line-layer-only ink (eyes, seams, carve lines). */
+  ink(draw: (c: Ctx) => void): void
+  /** Fill the intersection of two clip paths: an ink "cavity", or a "solid" part outlined by clipB. */
+  clipped(clipA: (c: Ctx) => void, clipB: (c: Ctx) => void, kind: "cavity" | "solid", fill?: Fill): void
+}
+
+function sphereFill(cx: number, cy: number, r: number, bias = 0) {
+  return (c: Ctx) => {
+    const g = c.createRadialGradient(cx + LIGHT.x * r * 0.45, cy + LIGHT.y * r * 0.45, r * 0.1, cx, cy, r * 1.25)
+    g.addColorStop(0, gray(1))
+    g.addColorStop(0.55, gray(0.92 + bias))
+    g.addColorStop(1, gray(0.48 + bias))
+    return g
   }
-  ctx.stroke()
-  // Mouth cavity visible when open.
-  if (jawDrop > 1 && !wire) {
-    ctx.fillStyle = INK
-    ctx.fillRect(-shellW * 0.3 + yawShift * 0.5, -H * 0.22 + pitchShift * 0.3, shellW * 0.6, jawDrop + 2)
+}
+
+function limbFill(x0: number, y0: number, x1: number, y1: number, r: number) {
+  return (c: Ctx) => {
+    const a = Math.atan2(y1 - y0, x1 - x0)
+    let nx = -Math.sin(a)
+    let ny = Math.cos(a)
+    if (nx * LIGHT.x + ny * LIGHT.y < 0) {
+      nx = -nx
+      ny = -ny
+    }
+    const mx = (x0 + x1) / 2
+    const my = (y0 + y1) / 2
+    const g = c.createLinearGradient(mx + nx * r, my + ny * r, mx - nx * r, my - ny * r)
+    g.addColorStop(0, gray(1))
+    g.addColorStop(0.5, gray(0.92))
+    g.addColorStop(1, gray(0.5))
+    return g
+  }
+}
+
+/** Capsule that tapers from r0 at p0 to r1 at p1. */
+function taper(x0: number, y0: number, x1: number, y1: number, r0: number, r1: number) {
+  return (c: Ctx) => {
+    const a = Math.atan2(y1 - y0, x1 - x0)
+    c.beginPath()
+    c.arc(x0, y0, r0, a + Math.PI / 2, a + (3 * Math.PI) / 2)
+    c.arc(x1, y1, r1, a - Math.PI / 2, a + Math.PI / 2)
+    c.closePath()
+  }
+}
+
+const ellipse = (x: number, y: number, rx: number, ry: number, rot = 0) => (c: Ctx) => {
+  c.beginPath()
+  c.ellipse(x, y, Math.max(rx, 0.1), Math.max(ry, 0.1), rot, 0, Math.PI * 2)
+}
+
+function drawArm(p: Painter, sx: number, sy: number, shoulder: number, elbow: number, side: 1 | -1) {
+  const dir = (deg: number) => ({ x: side * Math.sin(deg * RAD), y: Math.cos(deg * RAD) })
+  const u = dir(shoulder)
+  const ex = sx + u.x * 21
+  const ey = sy + u.y * 21
+  const f = dir(shoulder + elbow)
+  const wx = ex + f.x * 18
+  const wy = ey + f.y * 18
+  const hx = wx + f.x * 5
+  const hy = wy + f.y * 5
+
+  p.shape(taper(sx, sy, ex, ey, 4.2, 3.2), limbFill(sx, sy, ex, ey, 4.2))
+  p.shape(taper(ex, ey, wx, wy, 3.1, 2.3), limbFill(ex, ey, wx, wy, 3.1))
+  // Mitten hand, angled along the forearm.
+  p.shape(ellipse(hx, hy, 3.2, 4.6, Math.atan2(f.y, f.x) - Math.PI / 2), sphereFill(hx, hy, 4.6))
+  p.shape(ellipse(wx, wy, 2.2, 2.2), sphereFill(wx, wy, 2.2, -0.05))
+  p.shape(ellipse(ex, ey, 3.1, 3.1), sphereFill(ex, ey, 3.1, -0.05))
+  p.shape(ellipse(sx, sy, 5, 5), sphereFill(sx, sy, 5))
+}
+
+function drawHead(p: Painter, f: ChannelFrame, nx: number, ny: number) {
+  // Head group pivots at the neck ball (roll). Yaw and pitch slide the face
+  // across the egg; the far eye foreshortens.
+  const roll = f.headRoll * RAD
+  const cos = Math.cos(roll)
+  const sin = Math.sin(roll)
+  const at = (lx: number, ly: number) => ({ x: nx + lx * cos - ly * sin, y: ny + lx * sin + ly * cos })
+
+  const RX = 10.5
+  const RY = 13.5
+  const cy = -15 // head centre above the pivot
+  const yawS = Math.sin(f.headYaw * RAD)
+  const pitchS = Math.sin(f.headPitch * RAD)
+  const faceX = yawS * RX * 0.58
+  const faceY = -pitchS * RY * 0.42
+
+  const c0 = at(0, cy)
+  const egg = ellipse(c0.x, c0.y, RX, RY, roll)
+  const headFill = (c: Ctx) => {
+    // Highlight slides against the turn, so the head reads as a rotating solid.
+    const hl = at(-RX * 0.35 - yawS * RX * 0.35, cy - RY * 0.4 + pitchS * RY * 0.25)
+    const g = c.createRadialGradient(hl.x, hl.y, 1, c0.x, c0.y, RY * 1.25)
+    g.addColorStop(0, gray(1))
+    g.addColorStop(0.55, gray(0.93))
+    g.addColorStop(1, gray(0.5))
+    return g
   }
 
-  // Upper shell.
-  roundRect(ctx, -shellW / 2, -H, shellW, H * 0.82, 14 * s)
-  if (!wire) {
-    ctx.fillStyle = SHELL
-    ctx.fill()
+  // Jaw: a chin block below the mouth line, dropped by the jaw angle.
+  const mouthY = cy + 5.5 + faceY * 0.5
+  const chinHalfW = 5.2 * (1 - Math.abs(yawS) * 0.25)
+  const chinX = faceX * 0.85
+  const drop = Math.sin(f.jaw * RAD) * 11
+  const chinRect = (dy: number) => (c: Ctx) => {
+    const a = at(chinX - chinHalfW, mouthY + dy)
+    c.save()
+    c.translate(a.x, a.y)
+    c.rotate(roll)
+    c.beginPath()
+    c.rect(0, 0, chinHalfW * 2, RY * 2)
+    c.restore()
   }
-  ctx.stroke()
 
-  // Visor band.
-  const fx = yawShift
-  const fy = -H * 0.58 + pitchShift
-  roundRect(ctx, fx - shellW * 0.4, fy - 14 * s, shellW * 0.8, 28 * s, 8 * s)
-  if (!wire) {
-    ctx.fillStyle = METAL_DARK
-    ctx.fill()
-  }
-  ctx.stroke()
+  // Upper head (whole egg; the chin gets painted over it).
+  p.shape(egg, headFill)
 
-  // Eyes with lids: lids channel 0 = open, 80 = shut.
+  // Mouth cavity, then the dropped chin on top of it.
+  p.clipped(chinRect(0), egg, "cavity")
+  const dropVec = { x: -sin * drop, y: cos * drop }
+  const eggDropped = ellipse(c0.x + dropVec.x, c0.y + dropVec.y, RX, RY, roll)
+  p.clipped(chinRect(drop), eggDropped, "solid", headFill)
+
+  // Marionette seams down from the mouth corners.
+  p.ink((c) => {
+    c.lineWidth = 1
+    c.strokeStyle = gray(0)
+    for (const sx of [chinX - chinHalfW, chinX + chinHalfW]) {
+      const a = at(sx, mouthY + drop)
+      const b = at(sx, cy + RY * 0.92 + drop)
+      c.beginPath()
+      c.moveTo(a.x, a.y)
+      c.lineTo(b.x, b.y)
+      c.stroke()
+    }
+  })
+
+  // Eyes: carved almonds; lids close them top-down.
   const lid = Math.min(Math.max(f.lids / 80, 0), 1)
-  for (const side of [-1, 1]) {
-    const ex = fx + side * shellW * 0.2
-    const r = 9 * s
-    ctx.beginPath()
-    ctx.arc(ex, fy, r, 0, Math.PI * 2)
-    if (!wire) {
-      ctx.fillStyle = EYE
-      ctx.fill()
-    }
-    ctx.stroke()
-    if (!wire) {
-      ctx.beginPath()
-      ctx.arc(ex + Math.sin(f.headYaw * RAD) * 3 * s, fy - Math.sin(f.headPitch * RAD) * 3 * s, r * 0.4, 0, Math.PI * 2)
-      ctx.fillStyle = INK
-      ctx.fill()
-      if (lid > 0.02) {
-        ctx.save()
-        ctx.beginPath()
-        ctx.arc(ex, fy, r, 0, Math.PI * 2)
-        ctx.clip()
-        ctx.fillStyle = SHELL_DARK
-        ctx.fillRect(ex - r, fy - r, r * 2, r * 2 * lid)
-        ctx.restore()
-        ctx.beginPath()
-        ctx.arc(ex, fy, r, 0, Math.PI * 2)
-        ctx.stroke()
+  for (const s of [-1, 1] as const) {
+    const near = s * yawS >= 0 ? 1 : 1 - Math.abs(yawS) * 0.55
+    const e = at(faceX + s * 4.4 * (1 - Math.abs(yawS) * 0.2), cy - 2 + faceY)
+    const rx = 1.9 * near
+    const ry = 1.15 * (1 - lid)
+    p.ink((c) => {
+      c.fillStyle = gray(0)
+      c.strokeStyle = gray(0)
+      c.lineWidth = 1
+      if (ry < 0.3) {
+        const a = at(faceX + s * 4.4 - rx, cy - 2 + faceY)
+        const b = at(faceX + s * 4.4 + rx, cy - 2 + faceY)
+        c.beginPath()
+        c.moveTo(a.x, a.y)
+        c.lineTo(b.x, b.y)
+        c.stroke()
+      } else {
+        c.beginPath()
+        c.ellipse(e.x, e.y, rx, ry, roll, 0, Math.PI * 2)
+        c.fill()
       }
-    }
+    })
   }
 
-  // Antenna — a little wobble indicator for roll.
-  ctx.beginPath()
-  ctx.moveTo(fx * 0.3, -H)
-  ctx.lineTo(fx * 0.3, -H - 12 * s)
-  ctx.stroke()
-  ctx.beginPath()
-  ctx.arc(fx * 0.3, -H - 15 * s, 3.5 * s, 0, Math.PI * 2)
-  if (!wire) {
-    ctx.fillStyle = "#c86a4a"
-    ctx.fill()
-  }
-  ctx.stroke()
-
-  ctx.restore()
+  // Nose ridge: a short carved line that tracks yaw.
+  p.ink((c) => {
+    const a = at(faceX * 1.05, cy + 0.5 + faceY)
+    const b = at(faceX * 1.1, cy + 3.2 + faceY)
+    c.strokeStyle = gray(0)
+    c.lineWidth = 1
+    c.beginPath()
+    c.moveTo(a.x, a.y)
+    c.lineTo(b.x, b.y)
+    c.stroke()
+  })
 }
 
-function drawPose(ctx: CanvasRenderingContext2D, w: number, h: number, f: ChannelFrame, wire: boolean) {
-  const s = Math.min(w / 320, h / 300)
-  const cx = w / 2
-  const torsoTop = h * 0.5
-  const torsoW = 120 * s
-  const torsoH = 96 * s
+function drawMannequin(p: Painter, f: ChannelFrame) {
+  const cx = 80
+  // Stand: base plate, rod, pelvis block.
+  p.shape(ellipse(cx, 111, 24, 4.5), (c) => {
+    const g = c.createLinearGradient(cx - 24, 107, cx + 24, 115)
+    g.addColorStop(0, gray(0.85))
+    g.addColorStop(1, gray(0.4))
+    return g
+  })
+  p.shape(taper(cx, 92, cx, 110, 1.6, 1.6), limbFill(cx, 92, cx, 110, 1.6))
+  p.shape(ellipse(cx, 86, 13, 7.5), sphereFill(cx, 86, 13))
+  p.shape(ellipse(cx, 77, 4.5, 4.5), sphereFill(cx, 77, 4.5, -0.05))
 
-  ctx.lineJoin = "round"
-  ctx.lineCap = "round"
-  ctx.lineWidth = 2
-  ctx.strokeStyle = wire ? SHELL : INK
-
-  // Pedestal.
-  if (!wire) {
-    ctx.fillStyle = METAL_DARK
-    ctx.fillRect(cx - 70 * s, torsoTop + torsoH - 4 * s, 140 * s, h - (torsoTop + torsoH) + 4 * s)
-    ctx.strokeRect(cx - 70 * s, torsoTop + torsoH - 4 * s, 140 * s, h - (torsoTop + torsoH) + 4 * s)
+  // Chest: an egg, wider at the shoulders.
+  const chest = (c: Ctx) => {
+    c.beginPath()
+    c.moveTo(cx - 20, 52)
+    c.bezierCurveTo(cx - 22, 46, cx + 22, 46, cx + 20, 52)
+    c.bezierCurveTo(cx + 19, 64, cx + 10, 76, cx, 76)
+    c.bezierCurveTo(cx - 10, 76, cx - 19, 64, cx - 20, 52)
+    c.closePath()
   }
-
-  // Arms go behind the torso's shoulder line.
-  const shoulderY = torsoTop + 16 * s
-  drawArm(ctx, cx - torsoW / 2 - 4 * s, shoulderY, f.rShoulder, f.rElbow, s, -1, wire)
-  drawArm(ctx, cx + torsoW / 2 + 4 * s, shoulderY, f.lShoulder, f.lElbow, s, 1, wire)
-
-  // Torso.
-  roundRect(ctx, cx - torsoW / 2, torsoTop, torsoW, torsoH, 12 * s)
-  if (!wire) {
-    ctx.fillStyle = SHELL
-    ctx.fill()
-  }
-  ctx.stroke()
-  if (!wire) {
-    // Chest panel with rivets.
-    ctx.strokeRect(cx - 30 * s, torsoTop + 26 * s, 60 * s, 40 * s)
-    ctx.fillStyle = INK
-    for (const [rx, ry] of [[-24, 32], [24, 32], [-24, 60], [24, 60]]) {
-      ctx.beginPath()
-      ctx.arc(cx + rx * s, torsoTop + ry * s, 1.8 * s, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
+  p.shape(chest, sphereFill(cx, 58, 21))
+  p.ink((c) => {
+    // Pectoral carve line.
+    c.strokeStyle = gray(0)
+    c.lineWidth = 1
+    c.beginPath()
+    c.moveTo(cx - 11, 60)
+    c.quadraticCurveTo(cx, 64, cx + 11, 60)
+    c.stroke()
+  })
 
   // Neck.
-  const neckTop = torsoTop - 10 * s
-  if (!wire) {
-    ctx.fillStyle = METAL
-    ctx.fillRect(cx - 12 * s, neckTop, 24 * s, 14 * s)
-  }
-  ctx.strokeRect(cx - 12 * s, neckTop, 24 * s, 14 * s)
+  p.shape(taper(cx, 50, cx, 42, 3.2, 2.8), limbFill(cx, 50, cx, 42, 3.2))
+  p.shape(ellipse(cx, 42, 3.2, 3.2), sphereFill(cx, 42, 3.2, -0.05))
+  drawHead(p, f, cx, 42)
 
-  drawHead(ctx, cx, neckTop, f, s, wire)
+  // Arms last: in front of the torso.
+  drawArm(p, cx - 22, 51, f.rShoulder, f.rElbow, -1)
+  drawArm(p, cx + 22, 51, f.lShoulder, f.lElbow, 1)
 }
 
+// ---- Painters ---------------------------------------------------------------
+
+const FILL_ALL = (c: Ctx) => c.fillRect(-1e4, -1e4, 2e4, 2e4)
+
+function platePainter(shade: Ctx, line: Ctx): Painter {
+  return {
+    shape(path, fill) {
+      path(shade)
+      shade.fillStyle = fill(shade)
+      shade.fill()
+      // White fill on the line layer occludes outlines of parts behind this one.
+      path(line)
+      line.fillStyle = gray(1)
+      line.fill()
+      line.strokeStyle = gray(0)
+      line.lineWidth = 1
+      line.stroke()
+    },
+    ink(draw) {
+      line.save()
+      draw(line)
+      line.restore()
+    },
+    clipped(clipA, clipB, kind, fill) {
+      for (const c of [shade, line]) {
+        c.save()
+        clipA(c)
+        c.clip()
+        clipB(c)
+        c.clip()
+        c.fillStyle = kind === "cavity" ? gray(0) : c === shade && fill ? fill(c) : gray(1)
+        FILL_ALL(c)
+        if (kind === "solid" && c === line) {
+          clipB(c)
+          c.strokeStyle = gray(0)
+          c.lineWidth = 1.4
+          c.stroke()
+        }
+        c.restore()
+      }
+    },
+  }
+}
+
+/** Outlines only, no occlusion — an x-ray scope trace (dashed for the ghost). */
+function outlinePainter(line: Ctx, dashed = false): Painter {
+  const stroke = (width = 1) => {
+    line.save()
+    if (dashed) line.setLineDash([1, 2])
+    line.strokeStyle = gray(0)
+    line.lineWidth = width
+    line.stroke()
+    line.restore()
+  }
+  return {
+    shape(path) {
+      path(line)
+      stroke()
+    },
+    ink(draw) {
+      if (dashed) return
+      line.save()
+      draw(line)
+      line.restore()
+    },
+    clipped(clipA, clipB, kind) {
+      if (kind !== "solid") return
+      line.save()
+      clipA(line)
+      line.clip()
+      clipB(line)
+      stroke(1.4)
+      line.restore()
+    },
+  }
+}
+
+// ---- Entry point -------------------------------------------------------------
+
 export function drawFigure(canvas: HTMLCanvasElement, frame: ChannelFrame, opts: DrawOptions = {}) {
+  const mode = opts.mode ?? "plate"
+  // Layout size, not getBoundingClientRect — the latter includes ancestor transforms.
+  const cssW = Math.max(1, canvas.clientWidth)
+  const cssH = Math.max(1, canvas.clientHeight)
+  const lw = Math.max(1, Math.ceil(cssW / PIXEL))
+  const lh = Math.max(1, Math.ceil(cssH / PIXEL))
+  const { shade, line } = getLayers(canvas, lw, lh)
+  const sctx = shade.getContext("2d", { willReadFrequently: true })!
+  const lctx = line.getContext("2d", { willReadFrequently: true })!
+
+  // Map the 160×120 design space into the low-res buffer, centred.
+  const s = Math.min(lw / 160, lh / 120)
+  const ox = (lw - 160 * s) / 2
+  const oy = (lh - 120 * s) / 2
+
+  for (const c of [sctx, lctx]) {
+    c.setTransform(1, 0, 0, 1, 0, 0)
+    c.fillStyle = gray(1)
+    c.fillRect(0, 0, lw, lh)
+  }
+
+  // Backdrop: dot grid + floor shadow (plate) / sparse graticule (scope).
+  const step = Math.max(6, Math.round(10 * s))
+  lctx.fillStyle = gray(0)
+  for (let y = step / 2; y < lh; y += step) {
+    for (let x = step / 2; x < lw; x += step) lctx.fillRect(Math.floor(x), Math.floor(y), 1, 1)
+  }
+
+  for (const c of [sctx, lctx]) c.setTransform(s, 0, 0, s, ox, oy)
+
+  if (mode === "plate") {
+    sctx.fillStyle = gray(0.62)
+    sctx.beginPath()
+    sctx.ellipse(84, 113, 30, 4.5, 0, 0, Math.PI * 2)
+    sctx.fill()
+    if (opts.ghost) drawMannequin(outlinePainter(lctx, true), opts.ghost)
+    drawMannequin(platePainter(sctx, lctx), frame)
+  } else {
+    drawMannequin(outlinePainter(lctx), frame)
+  }
+
+  // Combine layers with ordered dithering.
+  const sd = sctx.getImageData(0, 0, lw, lh).data
+  const ld = lctx.getImageData(0, 0, lw, lh)
+  const out = ld.data
+  const [inkC, paperC] = mode === "plate" ? [INK, PAPER] : [PHOSPHOR, SCOPE_BG]
+  for (let y = 0; y < lh; y++) {
+    const scan = mode === "scope" && y % 2 === 1
+    for (let x = 0; x < lw; x++) {
+      const i = (y * lw + x) * 4
+      const lineInk = out[i] < 140
+      const shadeInk = mode === "plate" && sd[i] / 255 < BAYER4[(y & 3) * 4 + (x & 3)]
+      const c = lineInk || shadeInk ? (scan ? PHOSPHOR_DIM : inkC) : paperC
+      out[i] = c[0]
+      out[i + 1] = c[1]
+      out[i + 2] = c[2]
+      out[i + 3] = 255
+    }
+  }
+  lctx.setTransform(1, 0, 0, 1, 0, 0)
+  lctx.putImageData(ld, 0, 0)
+
+  // Blit, nearest-neighbour.
   const dpr = window.devicePixelRatio || 1
-  // Layout size, not getBoundingClientRect — the latter includes ancestor transforms (window drag, zoom).
-  const w = Math.max(1, canvas.clientWidth)
-  const h = Math.max(1, canvas.clientHeight)
-  if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-    canvas.width = w * dpr
-    canvas.height = h * dpr
+  if (canvas.width !== Math.round(cssW * dpr) || canvas.height !== Math.round(cssH * dpr)) {
+    canvas.width = Math.round(cssW * dpr)
+    canvas.height = Math.round(cssH * dpr)
   }
-  const ctx = canvas.getContext("2d")
-  if (!ctx) return
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-
-  ctx.fillStyle = STAGE
-  ctx.fillRect(0, 0, w, h)
-  ctx.strokeStyle = GRID
-  ctx.lineWidth = 1
-  for (let x = 0.5; x < w; x += 16) {
-    ctx.beginPath()
-    ctx.moveTo(x, 0)
-    ctx.lineTo(x, h)
-    ctx.stroke()
-  }
-  for (let y = 0.5; y < h; y += 16) {
-    ctx.beginPath()
-    ctx.moveTo(0, y)
-    ctx.lineTo(w, y)
-    ctx.stroke()
-  }
-
-  if (opts.ghost) {
-    ctx.save()
-    ctx.globalAlpha = 0.35
-    ctx.setLineDash([3, 3])
-    drawPose(ctx, w, h, opts.ghost, true)
-    ctx.restore()
-  }
-  drawPose(ctx, w, h, frame, !!opts.wire)
+  const ctx = canvas.getContext("2d")!
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(line, 0, 0, lw * PIXEL * dpr, lh * PIXEL * dpr)
 
   if (opts.label) {
-    ctx.font = "10px ui-monospace, monospace"
-    ctx.fillStyle = "rgba(212, 200, 154, 0.8)"
-    ctx.fillText(opts.label, 8, 14)
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+    ctx.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace"
+    const w = ctx.measureText(opts.label).width
+    const [bg, fg] = mode === "plate" ? [PAPER, INK] : [SCOPE_BG, PHOSPHOR]
+    ctx.fillStyle = `rgb(${bg.join(",")})`
+    ctx.fillRect(6, 5, w + 8, 14)
+    ctx.strokeStyle = `rgb(${fg.join(",")})`
+    ctx.lineWidth = 1
+    ctx.strokeRect(6.5, 5.5, w + 7, 13)
+    ctx.fillStyle = `rgb(${fg.join(",")})`
+    ctx.fillText(opts.label, 10, 15.5)
   }
 }

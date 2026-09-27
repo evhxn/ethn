@@ -5,6 +5,7 @@ import { ArchiveWindow } from "../archive-window"
 import { ChannelGraph } from "./channel-graph"
 import { drawFigure } from "./draw-figure"
 import { CHANNELS, type ChannelFrame, type ChannelId, type ChannelSpec } from "@/lib/motion-studio/channels"
+import { DEFAULT_CHARACTER, type CharacterParams } from "@/lib/motion-studio/character"
 import { DEFAULT_ONE_EURO, type OneEuroParams } from "@/lib/motion-studio/filters"
 import { makeDemoTake } from "@/lib/motion-studio/demo-take"
 import { downloadText, toArduinoSketch, toCsv, toShowJson } from "@/lib/motion-studio/export"
@@ -92,6 +93,7 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<"studio" | "readme">("studio")
   const [channels, setChannels] = useState<ChannelSpec[]>(CHANNELS)
   const [oneEuro, setOneEuro] = useState<OneEuroParams>(DEFAULT_ONE_EURO)
+  const [character, setCharacter] = useState<CharacterParams>(DEFAULT_CHARACTER)
   const [take, setTake] = useState<Take>(() => makeDemoTake())
   const [playhead, setPlayhead] = useState(0)
   const [playing, setPlaying] = useState(true)
@@ -122,7 +124,7 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
   const mirrorRef = useRef(mirror)
   mirrorRef.current = mirror
 
-  const processed = useMemo(() => processTake(take, { rate: RATE, oneEuro, channels }), [take, oneEuro, channels])
+  const processed = useMemo(() => processTake(take, { rate: RATE, oneEuro, character, channels }), [take, oneEuro, character, channels])
   const live = camera === "live" || camera === "loading"
   const selectedSpec = channels.find((c) => c.id === selected)!
 
@@ -160,8 +162,8 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
     if (live) return
     const out = frameAt(processed, playhead, "output")
     const raw = frameAt(processed, playhead, "raw")
-    if (figureRef.current) drawFigure(figureRef.current, out, { ghost: ghost ? raw : undefined, label: "SERVO OUTPUT · 50 Hz" })
-    if (rawRef.current) drawFigure(rawRef.current, raw, { wire: true, label: `RAW CAPTURE · ${take.name}` })
+    if (figureRef.current) drawFigure(figureRef.current, out, { ghost: ghost ? raw : undefined, label: "FIGURE · 50 Hz" })
+    if (rawRef.current) drawFigure(rawRef.current, raw, { mode: "scope", label: `RAW · ${take.name}` })
   }, [processed, playhead, ghost, live, take.name])
 
   // Redraw on resize while paused.
@@ -200,7 +202,7 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
         const { createTracker } = await import("@/lib/motion-studio/tracker")
         trackerRef.current = await createTracker()
       }
-      liveRef.current = new LivePipeline({ rate: RATE, oneEuro, channels })
+      liveRef.current = new LivePipeline({ rate: RATE, oneEuro, character, channels })
       setCamera("live")
     } catch (err) {
       stopCamera()
@@ -386,10 +388,10 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
                 <p className="mb-3 border border-archive-border bg-[#fffde8] px-2 py-1 text-[11px] font-mono text-archive-text">{cameraError}</p>
               )}
 
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_240px]">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {/* Performer / raw */}
                 <Panel title={live ? "PERFORMER — WEBCAM" : "BEFORE — RAW CAPTURE"}>
-                  <div className="relative aspect-[4/3] flex-1 bg-archive-desktop lg:aspect-auto lg:min-h-[300px]">
+                  <div className="relative aspect-[4/3] bg-archive-desktop lg:aspect-[16/10]">
                     <video
                       ref={videoRef}
                       playsInline
@@ -420,85 +422,11 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
 
                 {/* Figure */}
                 <Panel title={live ? "FIGURE — LIVE (FILTERED + LIMITED)" : "AFTER — FIGURE OUTPUT"}>
-                  <div className="relative aspect-[4/3] flex-1 bg-archive-desktop lg:aspect-auto lg:min-h-[300px]">
+                  <div className="relative aspect-[4/3] bg-archive-desktop lg:aspect-[16/10]">
                     <canvas ref={figureRef} className="absolute inset-0 h-full w-full" />
                   </div>
                 </Panel>
 
-                {/* Pipeline / export */}
-                <div className="grid grid-cols-1 content-start gap-3 sm:col-span-2 sm:grid-cols-3 lg:col-span-1 lg:grid-cols-1">
-                  <Panel title="SMOOTHING — ONE EURO">
-                    <div className="flex flex-col gap-2 p-2">
-                      <label className="text-[10px] font-mono text-archive-textMuted">
-                        Min cutoff {oneEuro.minCutoff.toFixed(2)} Hz
-                        <input
-                          type="range"
-                          min={0.1}
-                          max={5}
-                          step={0.05}
-                          value={oneEuro.minCutoff}
-                          onChange={(e) => setOneEuro({ ...oneEuro, minCutoff: Number(e.target.value) })}
-                          className="w-full accent-[#5a5a58]"
-                        />
-                      </label>
-                      <label className="text-[10px] font-mono text-archive-textMuted">
-                        Speed coefficient β {oneEuro.beta.toFixed(3)}
-                        <input
-                          type="range"
-                          min={0}
-                          max={0.2}
-                          step={0.005}
-                          value={oneEuro.beta}
-                          onChange={(e) => setOneEuro({ ...oneEuro, beta: Number(e.target.value) })}
-                          className="w-full accent-[#5a5a58]"
-                        />
-                      </label>
-                    </div>
-                  </Panel>
-
-                  <Panel title={`LIMITS — ${selectedSpec.label.toUpperCase()}`}>
-                    <div className="flex flex-col gap-1 p-2">
-                      <NumberField label="Min (°)" value={selectedSpec.min} onChange={(v) => updateSelected({ min: Math.min(v, selectedSpec.max - 1) })} />
-                      <NumberField label="Max (°)" value={selectedSpec.max} onChange={(v) => updateSelected({ max: Math.max(v, selectedSpec.min + 1) })} />
-                      <NumberField label="Vel (°/s)" value={selectedSpec.vmax} step={10} onChange={(v) => updateSelected({ vmax: Math.max(v, 1) })} />
-                      <NumberField label="Accel (°/s²)" value={selectedSpec.amax} step={100} onChange={(v) => updateSelected({ amax: Math.max(v, 10) })} />
-                      <NumberField label="Jerk (°/s³)" value={selectedSpec.jmax} step={1000} onChange={(v) => updateSelected({ jmax: Math.max(v, 100) })} />
-                      <button
-                        type="button"
-                        onClick={() => setChannels(CHANNELS)}
-                        className="mt-1 self-end text-[10px] font-mono text-archive-textMuted underline underline-offset-2 hover:text-archive-text"
-                      >
-                        reset all limits
-                      </button>
-                    </div>
-                  </Panel>
-
-                  <Panel title="EXPORT">
-                    <div className="flex flex-col gap-1.5 p-2">
-                      <div className="grid grid-cols-2 gap-x-2 text-[10px] font-mono">
-                        <span className="text-archive-textMuted">Frames</span>
-                        <span className="text-right text-archive-text">
-                          {processed.frameCount} @ {RATE} Hz
-                        </span>
-                        <span className="text-archive-textMuted">Raw limit breaks</span>
-                        <span className="text-right text-archive-text">{totals.rawViolations}</span>
-                        <span className="text-archive-textMuted">Limiter engaged</span>
-                        <span className="text-right text-archive-text">{totals.limitedPct.toFixed(1)}%</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <Btn onClick={() => downloadText(`${take.name}.ino`, toArduinoSketch(processed, channels, take.name))} disabled={live} title="Arduino/ESP32 sketch for a PCA9685 servo driver">
-                          .INO
-                        </Btn>
-                        <Btn onClick={() => downloadText(`${take.name}.json`, toShowJson(processed, channels, take.name), "application/json")} disabled={live}>
-                          .JSON
-                        </Btn>
-                        <Btn onClick={() => downloadText(`${take.name}.csv`, toCsv(processed, channels), "text/csv")} disabled={live}>
-                          .CSV
-                        </Btn>
-                      </div>
-                    </div>
-                  </Panel>
-                </div>
               </div>
 
               {/* Transport */}
@@ -528,8 +456,112 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
                 </label>
               </div>
 
+              {/* Pipeline / export */}
+              <div className="mt-3 grid grid-cols-1 items-start gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <Panel title="SMOOTHING — ONE EURO">
+                  <div className="flex flex-col gap-2 p-2">
+                    <label className="text-[10px] font-mono text-archive-textMuted">
+                      Min cutoff {oneEuro.minCutoff.toFixed(2)} Hz
+                      <input
+                        type="range"
+                        min={0.1}
+                        max={5}
+                        step={0.05}
+                        value={oneEuro.minCutoff}
+                        onChange={(e) => setOneEuro({ ...oneEuro, minCutoff: Number(e.target.value) })}
+                        className="w-full accent-[#5a5a58]"
+                      />
+                    </label>
+                    <label className="text-[10px] font-mono text-archive-textMuted">
+                      Speed coefficient β {oneEuro.beta.toFixed(3)}
+                      <input
+                        type="range"
+                        min={0}
+                        max={0.2}
+                        step={0.005}
+                        value={oneEuro.beta}
+                        onChange={(e) => setOneEuro({ ...oneEuro, beta: Number(e.target.value) })}
+                        className="w-full accent-[#5a5a58]"
+                      />
+                    </label>
+                  </div>
+                </Panel>
+
+                <Panel title="CHARACTER">
+                  <div className="flex flex-col gap-2 p-2">
+                    {(
+                      [
+                        ["life", "Life", "Breathing + idle drift"],
+                        ["followThrough", "Follow-through", "Springy overshoot & settle"],
+                        ["overlap", "Overlap", "Elbows & roll trail their drivers"],
+                      ] as const
+                    ).map(([key, label, hint]) => (
+                      <label key={key} className="text-[10px] font-mono text-archive-textMuted" title={hint}>
+                        {label} {Math.round(character[key] * 100)}%
+                        <input
+                          type="range"
+                          min={0}
+                          max={1}
+                          step={0.05}
+                          value={character[key]}
+                          onChange={(e) => setCharacter({ ...character, [key]: Number(e.target.value) })}
+                          className="w-full accent-[#5a5a58]"
+                        />
+                      </label>
+                    ))}
+                    <label className="flex items-center gap-1 text-[10px] font-mono text-archive-text" title="Blink on fast head turns and at idle">
+                      <input type="checkbox" checked={character.autoBlink} onChange={(e) => setCharacter({ ...character, autoBlink: e.target.checked })} />
+                      Auto-blink
+                    </label>
+                  </div>
+                </Panel>
+
+                <Panel title={`LIMITS — ${selectedSpec.label.toUpperCase()}`}>
+                  <div className="flex flex-col gap-1 p-2">
+                    <NumberField label="Min (°)" value={selectedSpec.min} onChange={(v) => updateSelected({ min: Math.min(v, selectedSpec.max - 1) })} />
+                    <NumberField label="Max (°)" value={selectedSpec.max} onChange={(v) => updateSelected({ max: Math.max(v, selectedSpec.min + 1) })} />
+                    <NumberField label="Vel (°/s)" value={selectedSpec.vmax} step={10} onChange={(v) => updateSelected({ vmax: Math.max(v, 1) })} />
+                    <NumberField label="Accel (°/s²)" value={selectedSpec.amax} step={100} onChange={(v) => updateSelected({ amax: Math.max(v, 10) })} />
+                    <NumberField label="Jerk (°/s³)" value={selectedSpec.jmax} step={1000} onChange={(v) => updateSelected({ jmax: Math.max(v, 100) })} />
+                    <button
+                      type="button"
+                      onClick={() => setChannels(CHANNELS)}
+                      className="mt-1 self-end text-[10px] font-mono text-archive-textMuted underline underline-offset-2 hover:text-archive-text"
+                    >
+                      reset all limits
+                    </button>
+                  </div>
+                </Panel>
+
+                <Panel title="EXPORT">
+                  <div className="flex flex-col gap-1.5 p-2">
+                    <div className="grid grid-cols-2 gap-x-2 text-[10px] font-mono">
+                      <span className="text-archive-textMuted">Frames</span>
+                      <span className="text-right text-archive-text">
+                        {processed.frameCount} @ {RATE} Hz
+                      </span>
+                      <span className="text-archive-textMuted">Raw limit breaks</span>
+                      <span className="text-right text-archive-text">{totals.rawViolations}</span>
+                      <span className="text-archive-textMuted">Limiter engaged</span>
+                      <span className="text-right text-archive-text">{totals.limitedPct.toFixed(1)}%</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1">
+                      <Btn onClick={() => downloadText(`${take.name}.ino`, toArduinoSketch(processed, channels, take.name))} disabled={live} title="Arduino/ESP32 sketch for a PCA9685 servo driver">
+                        .INO
+                      </Btn>
+                      <Btn onClick={() => downloadText(`${take.name}.json`, toShowJson(processed, channels, take.name), "application/json")} disabled={live}>
+                        .JSON
+                      </Btn>
+                      <Btn onClick={() => downloadText(`${take.name}.csv`, toCsv(processed, channels), "text/csv")} disabled={live}>
+                        .CSV
+                      </Btn>
+                    </div>
+                  </div>
+                </Panel>
+              </div>
+
               {/* Channels */}
-              <Panel title="CHANNELS — RAW (GREY) vs SERVO OUTPUT (BLACK) · CLICK TO EDIT LIMITS" className="mt-3">
+              <Panel title="CHANNELS — RAW (GREY) vs FIGURE OUTPUT (BLACK) · CLICK TO EDIT LIMITS" className="mt-3">
                 <div className="divide-y divide-archive-border">
                   {channels.map((c) => {
                     const t = processed.tracks[c.id]
@@ -637,9 +669,9 @@ function Readme() {
 
       <section className="border border-archive-border bg-archive-card p-3">
         <h3 className="mb-2 font-bold">PIPELINE</h3>
-        <pre className="overflow-x-auto whitespace-pre text-[10px] leading-snug text-archive-textMuted">{`webcam ─▶ MediaPipe face + pose ─▶ retarget ─▶ resample ─▶ One Euro ─▶ jerk limiter ─▶ servo frames
- ~30fps     landmarks, blendshapes,   joint       fixed      adaptive     pos/vel/accel/   50 Hz µs
- jittery    head transform matrix     angles      50 Hz      low-pass     jerk bounded     .ino/.json/.csv`}</pre>
+        <pre className="overflow-x-auto whitespace-pre text-[10px] leading-snug text-archive-textMuted">{`webcam ─▶ MediaPipe ─▶ retarget ─▶ resample ─▶ One Euro ─▶ character ─▶ jerk limiter ─▶ servo frames
+ ~30fps    face+pose   joint       fixed      adaptive     overlap,      pos/vel/acc/    50 Hz µs
+ jittery   landmarks   angles      50 Hz      low-pass     spring, life  jerk bounded    .ino/.json/.csv`}</pre>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-archive-textMuted">
           <li>
             <b className="text-archive-text">Tracking.</b> MediaPipe runs in WebAssembly/WebGL on your machine. The face model gives a head
@@ -656,6 +688,12 @@ function Readme() {
           <li>
             <b className="text-archive-text">Smoothing.</b> A One Euro filter (Casiez et al. 2012) smooths heavily when you&apos;re still and
             lightly when you move fast, trading jitter for lag only where it&apos;s invisible.
+          </li>
+          <li>
+            <b className="text-archive-text">Character.</b> Tracked motion sent straight to servos looks robotic: joints move
+            independently, stop dead, and hold perfectly still. This stage applies animation principles as signal processing —
+            overlapping action (elbows and head roll trail their drivers), follow-through (a slightly underdamped spring so moves
+            settle instead of stopping), secondary motion (breathing and idle drift), and blinks on fast head turns.
           </li>
           <li>
             <b className="text-archive-text">Motion limiting.</b> Each channel has position, velocity, acceleration, and jerk limits. A
@@ -683,7 +721,7 @@ function Readme() {
       <section className="border border-archive-border bg-archive-card p-3">
         <h3 className="mb-1 font-bold">STACK</h3>
         <p className="text-archive-textMuted">
-          TypeScript · React · Canvas 2D · MediaPipe Tasks Vision (WASM) · Vitest. The filter, limiter, and pipeline are unit-tested for limit
+          TypeScript · React · Canvas 2D (1-bit ordered dithering) · MediaPipe Tasks Vision (WASM) · Vitest. The filter, limiter, and pipeline are unit-tested for limit
           compliance, settling, overshoot, and glitch rejection.
         </p>
       </section>

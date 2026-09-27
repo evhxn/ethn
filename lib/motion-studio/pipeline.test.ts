@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest"
 import { CHANNELS, angleToMicros } from "./channels"
+import { CharacterStage, NO_CHARACTER } from "./character"
 import { makeDemoTake } from "./demo-take"
 import { toArduinoSketch, toCsv } from "./export"
 import { processTake, resampleChannel, DEFAULT_PROCESS_OPTIONS } from "./pipeline"
@@ -56,6 +57,22 @@ describe("processTake on the demo performance", () => {
 
   it("uses the default 50 Hz export rate", () => {
     expect(rate).toBe(DEFAULT_PROCESS_OPTIONS.rate)
+  })
+})
+
+describe("CharacterStage", () => {
+  it("passes the signal through untouched when every effect is off", () => {
+    const stage = new CharacterStage(NO_CHARACTER, CHANNELS)
+    for (let i = 0; i < 50; i++) {
+      const frame = Object.fromEntries(CHANNELS.map((c, k) => [c.id, Math.sin(i * 0.1 + k) * 10])) as Record<(typeof CHANNELS)[number]["id"], number>
+      expect(stage.step(frame, i / 50, 1 / 50)).toEqual(frame)
+    }
+  })
+
+  it("adds idle life to a perfectly still input", () => {
+    const processed = processTake({ name: "still", duration: 4, samples: [{ t: 0, values: { headYaw: 0 } }] })
+    const yaw = processed.tracks.headYaw.output
+    expect(Math.max(...yaw) - Math.min(...yaw)).toBeGreaterThan(0.5)
   })
 })
 

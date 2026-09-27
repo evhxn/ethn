@@ -23,7 +23,33 @@ export interface Tracker {
   close(): void
 }
 
+// MediaPipe's wasm routes its glog INFO/WARNING chatter ("Created TensorFlow
+// Lite XNNPACK delegate…", "W0927 …") through console.error/warn, which the
+// Next.js dev overlay reports as errors. Drop just those lines while a tracker
+// is alive; everything else passes through untouched.
+const GLOG_NOISE = /^(INFO|WARNING):|^[IW]\d{4} /
+let restoreConsole: (() => void) | null = null
+
+function muteMediaPipeLogs() {
+  if (restoreConsole) return
+  const { error, warn } = console
+  const filter =
+    (orig: (...args: unknown[]) => void) =>
+    (...args: unknown[]) => {
+      if (typeof args[0] === "string" && GLOG_NOISE.test(args[0])) return
+      orig.apply(console, args)
+    }
+  console.error = filter(error)
+  console.warn = filter(warn)
+  restoreConsole = () => {
+    console.error = error
+    console.warn = warn
+    restoreConsole = null
+  }
+}
+
 export async function createTracker(): Promise<Tracker> {
+  muteMediaPipeLogs()
   const vision = await import("@mediapipe/tasks-vision")
   const fileset = await vision.FilesetResolver.forVisionTasks(WASM_BASE)
 
@@ -73,6 +99,7 @@ export async function createTracker(): Promise<Tracker> {
     close() {
       face.close()
       pose.close()
+      restoreConsole?.()
     },
   }
 }
