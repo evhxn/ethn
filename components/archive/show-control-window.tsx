@@ -22,7 +22,8 @@ const CUES: CueStep[] = [
   { id: "Q3", tag: "GO", label: "PRESET — R2D2", cue: "figure-to-show", openFolder: "R2D2" },
   { id: "Q4", tag: "GO", label: "PRESET — CORGICADE", openFolder: "Corgicade" },
   { id: "Q5", tag: "GO", label: "MAIN EFFECT — F.I.S.H.BOT", cue: "burst", openFolder: "F.I.S.H.Bot" },
-  { id: "Q6", tag: "GO", label: "STRIKE — RESTORE HOUSE", houseLights: "up", closeFolder: true },
+  { id: "Q6", tag: "GO", label: "FIGURE — MOTION STUDIO", openFolder: "Motion Studio" },
+  { id: "Q7", tag: "GO", label: "STRIKE — RESTORE HOUSE", houseLights: "up", closeFolder: true },
 ]
 
 // A short synthesized relay/contactor click (no audio file) — real show-control

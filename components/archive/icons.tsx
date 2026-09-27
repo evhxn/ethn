@@ -43,3 +43,21 @@ export function ComingSoonIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+
+export function MotionStudioIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Program window */}
+      <rect x="4" y="8" width="56" height="48" rx="2" fill="#1a1a1e" stroke="#222" strokeWidth="2" />
+      <rect x="4" y="8" width="56" height="8" fill="#8a8a88" stroke="#222" strokeWidth="2" />
+      {/* Figure head */}
+      <rect x="20" y="22" width="24" height="18" rx="4" fill="#d4c89a" stroke="#222" strokeWidth="1.5" />
+      <rect x="23" y="26" width="18" height="6" rx="2" fill="#5a5a58" />
+      <circle cx="28" cy="29" r="2" fill="#f0ecd8" />
+      <circle cx="36" cy="29" r="2" fill="#f0ecd8" />
+      <rect x="24" y="36" width="16" height="4" rx="1" fill="#b8a862" stroke="#222" strokeWidth="1" />
+      {/* Motion curve */}
+      <path d="M8 50 Q18 42 26 48 T44 46 T58 44" stroke="#c86a4a" strokeWidth="2" fill="none" />
+    </svg>
+  )
+}
