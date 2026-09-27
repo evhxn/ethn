@@ -7,7 +7,7 @@ import { drawFigure } from "./draw-figure"
 import { CHANNELS, type ChannelFrame, type ChannelId, type ChannelSpec } from "@/lib/motion-studio/channels"
 import { DEFAULT_CHARACTER, type CharacterParams } from "@/lib/motion-studio/character"
 import { DEFAULT_ONE_EURO, type OneEuroParams } from "@/lib/motion-studio/filters"
-import { makeDemoTake } from "@/lib/motion-studio/demo-take"
+import { DEMO_TAKE_NAME, makeDemoTake } from "@/lib/motion-studio/demo-take"
 import { downloadText, toArduinoSketch, toCsv, toShowJson } from "@/lib/motion-studio/export"
 import { LivePipeline, processTake, type CaptureSample, type ProcessedTake, type Take } from "@/lib/motion-studio/pipeline"
 import { DEFAULT_RETARGET, headAnglesFromMatrix, retarget } from "@/lib/motion-studio/retarget"
@@ -51,7 +51,8 @@ function Btn({
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`border-2 border-archive-border px-2.5 py-1 text-[11px] font-mono font-bold tracking-wide transition-all disabled:cursor-not-allowed disabled:opacity-40 ${
+      aria-pressed={active}
+      className={`border-2 border-archive-border px-2.5 py-1 text-[11px] font-mono font-bold tracking-wide transition-all outline-none focus-visible:outline-dashed focus-visible:outline-1 focus-visible:outline-offset-2 focus-visible:outline-archive-border disabled:cursor-not-allowed disabled:opacity-40 ${
         active ? "bg-archive-highlight text-archive-highlightText" : "bg-archive-card text-archive-text hover:bg-archive-highlight/30"
       }`}
     >
@@ -127,6 +128,7 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
   const processed = useMemo(() => processTake(take, { rate: RATE, oneEuro, character, channels }), [take, oneEuro, character, channels])
   const live = camera === "live" || camera === "loading"
   const selectedSpec = channels.find((c) => c.id === selected)!
+  const source = live ? "camera" : take.name === DEMO_TAKE_NAME ? "demo" : "take"
 
   const totals = useMemo(() => {
     let rawViolations = 0
@@ -364,12 +366,23 @@ export function MotionStudioWindow({ onClose }: { onClose: () => void }) {
             <>
               {/* Toolbar */}
               <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                <Btn onClick={loadDemo} title="Load the bundled demo performance">DEMO TAKE</Btn>
-                {live ? (
-                  <Btn onClick={stopCamera} disabled={recording || countdown !== null}>CAMERA OFF</Btn>
-                ) : (
-                  <Btn onClick={startCamera} title="Track yourself with the webcam — video never leaves your browser">◉ CAMERA</Btn>
-                )}
+                {/* Source selector: demo take (default) or live camera. A recorded take selects neither. */}
+                <Btn
+                  active={source === "demo"}
+                  onClick={loadDemo}
+                  disabled={recording || countdown !== null}
+                  title="Play the bundled demo performance"
+                >
+                  {source === "demo" ? "◉" : "○"} DEMO TAKE
+                </Btn>
+                <Btn
+                  active={source === "camera"}
+                  onClick={live ? stopCamera : startCamera}
+                  disabled={recording || countdown !== null}
+                  title={live ? "Turn the camera off" : "Track yourself with the webcam — video never leaves your browser"}
+                >
+                  {source === "camera" ? "◉" : "○"} CAMERA
+                </Btn>
                 {recording ? (
                   <Btn active onClick={finishRecording}>■ STOP</Btn>
                 ) : (

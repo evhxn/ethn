@@ -9,6 +9,7 @@ import type { ChannelId } from "./channels"
 import type { CaptureSample, Take } from "./pipeline"
 
 const DURATION = 14
+export const DEMO_TAKE_NAME = "demo_take_01"
 
 function smoothstep(t: number) {
   return t * t * (3 - 2 * t)
@@ -104,5 +105,5 @@ export function makeDemoTake(): Take {
     t += 1 / 30 + (rand() - 0.5) * 0.012
   }
 
-  return { name: "demo_take_01", duration: DURATION, samples }
+  return { name: DEMO_TAKE_NAME, duration: DURATION, samples }
 }
